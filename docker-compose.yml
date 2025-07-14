@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: taskmanagement_db
+    environment:
+      SA_PASSWORD: "${DB_SA_PASSWORD}"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - taskmanagement_network
+
+  api:
+    build:
+      context: .
+      dockerfile: src/TaskManagementApp.Api/Dockerfile
+    container_name: taskmanagementapp_api
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      ConnectionStrings:DefaultConnection: "Server=${API_DB_SERVER},${DB_PORT};Database=${API_DB_NAME};User ID=${API_DB_USER};Password=${API_DB_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./https:/https:ro
+    depends_on:
+      - db
+    networks:
+      - taskmanagement_network
+
+networks:
+  taskmanagement_network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:

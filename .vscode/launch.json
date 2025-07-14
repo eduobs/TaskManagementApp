@@ -1,0 +1,47 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch TaskManagementApp.Api (HTTP)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/TaskManagementApp.Api/bin/Debug/net8.0/TaskManagementApp.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/TaskManagementApp.Api",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openBrowser",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger" // Abre o Swagger automaticamente
+            },
+            "env": {
+                // Variáveis de ambiente para HTTP
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000",
+                "ConnectionStrings__DefaultConnection": "Server=localhost,1433;Database=TaskManagementDb;User ID=sa;Password=YourStrong!PasswordDB;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+            }
+        },
+        {
+            "name": "Launch TaskManagementApp.Api (HTTPS)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/TaskManagementApp.Api/bin/Debug/net8.0/TaskManagementApp.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/TaskManagementApp.Api",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openBrowser",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
+            },
+            "env": {
+                // Variáveis de ambiente para HTTPS
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:5001;http://localhost:5000", // Permite HTTP e HTTPS
+                "ConnectionStrings__DefaultConnection": "Server=localhost,1433;Database=TaskManagementDb;User ID=sa;Password=YourStrong!PasswordDB;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+            }
+        }
+    ]
+}
