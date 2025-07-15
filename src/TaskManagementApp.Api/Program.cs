@@ -1,4 +1,6 @@
+using TaskManagementApp.Application;
 using TaskManagementApp.Data;
+using TaskManagementApp.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
 builder.Services.AddDataInfrastructure(builder.Configuration);
+builder.Services.AddDomain();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 

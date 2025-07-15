@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TaskManagementApp.Data\TaskManagementApp.Data.csproj" />
+    <ProjectReference Include="..\TaskManagementApp.Domain\TaskManagementApp.Domain.csproj" />
+    <ProjectReference Include="..\TaskManagementApp.Application\TaskManagementApp.Application.csproj" />
+    <ProjectReference Include="..\TaskManagementApp.Models\TaskManagementApp.Models.csproj" />
   </ItemGroup>
 
 </Project>
