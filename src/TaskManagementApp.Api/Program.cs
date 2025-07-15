@@ -1,3 +1,4 @@
+using TaskManagementApp.Api.Middlewares;
 using TaskManagementApp.Application;
 using TaskManagementApp.Data;
 using TaskManagementApp.Domain;
@@ -14,6 +15,8 @@ builder.Services.AddDomain();
 builder.Services.AddApplication();
 
 var app = builder.Build();
+
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

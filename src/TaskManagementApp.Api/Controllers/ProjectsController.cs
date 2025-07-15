@@ -30,21 +30,8 @@ namespace TaskManagementApp.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
         {
-            try
-            {
-                var response = await _projectService.ExecuteAsync(request);
-                return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Erro de validação ao criar projeto: {Message}", ex.Message);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ocorreu um erro inesperado ao criar o projeto.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Erro interno do servidor.");
-            }
+            var response = await _projectService.ExecuteAsync(request);
+            return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
         }
 
         /// <summary>
