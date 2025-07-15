@@ -1,9 +1,13 @@
+using TaskManagementApp.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
+
+builder.Services.AddDataInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
