@@ -14,6 +14,7 @@ namespace TaskManagementApp.Application
             services.AddScoped<ICreateProjectTaskService, CreateProjectTaskService>();
             services.AddScoped<IGetProjectTasksByProjectIdService, GetProjectTasksByProjectIdService>();
             services.AddScoped<IUpdateProjectTaskService, UpdateProjectTaskService>();
+            services.AddScoped<IUpdateProjectTaskStatusService, UpdateProjectTaskStatusService>();
             
             return services;
         }

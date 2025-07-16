@@ -1,0 +1,201 @@
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using TaskManagementApp.Application.ProjectTasks;
+using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Interfaces;
+using TaskManagementApp.Models.ProjectTasks;
+
+namespace TaskManagementApp.Tests.Application.ProjectTasks
+{
+    public class UpdateProjectTaskStatusServiceTests
+    {
+        private readonly Mock<IProjectTaskService> _mockProjectTaskDomainService;
+        private readonly Mock<ILogger<UpdateProjectTaskStatusService>> _mockLogger;
+        private readonly UpdateProjectTaskStatusService _updateProjectTaskStatusService;
+
+        public UpdateProjectTaskStatusServiceTests()
+        {
+            _mockProjectTaskDomainService = new Mock<IProjectTaskService>();
+            _mockLogger = new Mock<ILogger<UpdateProjectTaskStatusService>>();
+
+            _updateProjectTaskStatusService = new UpdateProjectTaskStatusService(
+                _mockProjectTaskDomainService.Object,
+                _mockLogger.Object
+            );
+        }
+
+        [Fact(DisplayName = @"DADO uma requisição dados válidos
+                            QUANDO o serviço atualizar com sucesso
+                            ENTÃO deve retornar tarefa atualizada")]
+        public async Task ExecuteAsync_RequisicaoValida_DeveRetornarComSuceso()
+        {
+            // Arrange
+            var taskExternalId = Guid.NewGuid();
+            var projectIdOriginal = Guid.NewGuid();
+            var projectIdInterno = 1;
+
+            var request = new UpdateProjectTaskStatusRequest
+            {
+                Status = Models.Enums.ProjectTaskStatus.Completed
+            };
+
+            var task = new ProjectTask(
+                "Título Original",
+                "Descrição Original",
+                DateTime.Today.AddDays(5),
+                TaskManagementApp.Domain.Enums.ProjectTaskPriority.Low,
+                projectIdInterno
+            );
+            task.GetType().GetProperty("ExternalId")?.SetValue(task, taskExternalId);
+            var parentProject = new Project("Projeto Original", "Descrição");
+            parentProject.GetType().GetProperty("ExternalId")?.SetValue(parentProject, projectIdOriginal);
+            task.GetType().GetProperty("Project")?.SetValue(task, parentProject);
+
+            task.UpdateStatus(TaskManagementApp.Domain.Enums.ProjectTaskStatus.InProgress);
+
+            var updatedTask = new ProjectTask(
+                task.Title,
+                task.Description,
+                task.Deadline,
+                task.Priority,
+                projectIdInterno
+            );
+            updatedTask.GetType().GetProperty("ExternalId")?.SetValue(updatedTask, taskExternalId);
+            updatedTask.GetType().GetProperty("Project")?.SetValue(updatedTask, parentProject);
+
+            updatedTask.UpdateStatus(TaskManagementApp.Domain.Enums.ProjectTaskStatus.Completed);
+
+            _mockProjectTaskDomainService
+                .Setup(s => s.UpdateProjectTaskStatusAsync(
+                    taskExternalId,
+                    (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status
+                ))
+                .ReturnsAsync(true);
+
+            _mockProjectTaskDomainService
+                .Setup(s => s.GetProjectTaskByExternalIdAsync(taskExternalId))
+                .ReturnsAsync(updatedTask);
+
+            // Act
+            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result!.Id.Should().Be(taskExternalId);
+            result.Status.Should().Be(request.Status);
+            result.Title.Should().Be(updatedTask.Title);
+            result.Description.Should().Be(updatedTask.Description);
+            result.Deadline.Should().Be(updatedTask.Deadline);
+            result.Priority.Should().Be((Models.Enums.ProjectTaskPriority)updatedTask.Priority);
+            result.ProjectId.Should().Be(projectIdOriginal);
+
+            _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
+                taskExternalId,
+                (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status
+            ), Times.Once());
+
+            _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(taskExternalId), Times.Once());
+        }
+
+        [Fact(DisplayName = @"DADO uma requisição de atualização de status
+                            QUANDO a tarefa não for encontrada pelo id
+                            ENTÃO deve retornar null")]
+        public async Task ExecuteAsync_TarefaNaoEncontrada_DeveRetornarNull()
+        {
+            // Arrange
+            var taskExternalId = Guid.NewGuid();
+            var request = new UpdateProjectTaskStatusRequest
+            {
+                Status = Models.Enums.ProjectTaskStatus.Completed
+            };
+
+            _mockProjectTaskDomainService
+                .Setup(s => s.UpdateProjectTaskStatusAsync(
+                    taskExternalId,
+                    It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>()
+                ))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request);
+
+            // Assert
+            result.Should().BeNull();
+
+            _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
+                taskExternalId,
+                It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>()
+            ), Times.Once());
+
+            _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
+        }
+
+        [Fact(DisplayName = @"DADO uma requisição com dados inválidos
+                            QUANDO serviço lançar ArgumentException
+                            ENTÃO deve retornar exceção")]
+        public async Task ExecuteAsync_ServicoLancaArgumentException_DeveRetornarExcecao()
+        {
+            // Arrange
+            var taskExternalId = Guid.NewGuid();
+            var request = new UpdateProjectTaskStatusRequest
+            {
+                Status = (Models.Enums.ProjectTaskStatus)999
+            };
+            var exception = new ArgumentException("Status inválido.", "newStatus");
+
+            _mockProjectTaskDomainService
+                .Setup(s => s.UpdateProjectTaskStatusAsync(
+                    taskExternalId,
+                    (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status
+                ))
+                .ThrowsAsync(exception);
+
+            // Act & Assert
+            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request);
+
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage(exception.Message);
+
+            _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
+                taskExternalId,
+                (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status
+            ), Times.Once());
+
+            _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
+        }
+
+        [Fact(DisplayName = @"DADO uma requisição de atualização de status
+                            QUANDO o serviço lançar uma exceção genérica
+                            ENTÃO deve retornar exceção")]
+        public async Task ExecuteAsync_ServicoLancaExcecaoGenerica_DeveLancarExcecao()
+        {
+            // Arrange
+            var taskExternalId = Guid.NewGuid();
+            var request = new UpdateProjectTaskStatusRequest
+            {
+                Status = Models.Enums.ProjectTaskStatus.Completed
+            };
+
+            var exception = new Exception("Erro inesperado durante a atualização de status.");
+
+            _mockProjectTaskDomainService
+                .Setup(s => s.UpdateProjectTaskStatusAsync(
+                    taskExternalId,
+                    It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>()
+                ))
+                .ThrowsAsync(exception);
+
+            // Act & Assert
+            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request);
+
+            await act.Should().ThrowAsync<Exception>().WithMessage(exception.Message);
+
+            _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
+                taskExternalId,
+                It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>()
+            ), Times.Once());
+
+            _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
+        }
+    }
+}
