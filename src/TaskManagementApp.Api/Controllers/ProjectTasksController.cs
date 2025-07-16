@@ -10,14 +10,16 @@ namespace TaskManagementApp.Api.Controllers
     {
         private readonly IUpdateProjectTaskService _updateProjectTaskService;
         private readonly IUpdateProjectTaskStatusService _updateProjectTaskStatusService;
-
+        private readonly IDeleteProjectTaskService _deleteProjectTaskService;
 
         public ProjectTasksController(
             IUpdateProjectTaskService updateProjectTaskService,
-            IUpdateProjectTaskStatusService updateProjectTaskStatusService)
+            IUpdateProjectTaskStatusService updateProjectTaskStatusService,
+            IDeleteProjectTaskService deleteProjectTaskService)
         {
             _updateProjectTaskService = updateProjectTaskService;
             _updateProjectTaskStatusService = updateProjectTaskStatusService;
+            _deleteProjectTaskService = deleteProjectTaskService;
         }
 
         /// <summary>
@@ -58,6 +60,24 @@ namespace TaskManagementApp.Api.Controllers
                 return NotFound();
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Remove uma tarefa específica.
+        /// </summary>
+        /// <param name="taskId">Id externo (GUID) da tarefa a ser excluida.</param>
+        /// <returns>No Content se a remoção for bem-sucedida, ou Not Found se a tarefa não existir.</returns>
+        [HttpDelete("{taskId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteProjectTask([FromRoute] Guid taskId)
+        {
+            var success = await _deleteProjectTaskService.ExecuteAsync(taskId);
+
+            if (!success)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }
