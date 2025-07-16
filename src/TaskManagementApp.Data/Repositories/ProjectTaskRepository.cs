@@ -21,8 +21,9 @@ namespace TaskManagementApp.Data.Repositories
         public async Task<IEnumerable<ProjectTask>> GetAllByProjectIdAsync(Guid projectId)
         {
             return await _context.ProjectTasks
-                                 .Where(pt => pt.Project.ExternalId.Equals(projectId))
-                                 .ToListAsync();
+                                .Where(pt => pt.Project.ExternalId.Equals(projectId))
+                                .Include(pt => pt.Project)
+                                .ToListAsync();
         }
 
         public async Task<IEnumerable<ProjectTask>> GetAllAsync() => await _context.ProjectTasks.ToListAsync();

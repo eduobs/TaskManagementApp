@@ -12,6 +12,7 @@ namespace TaskManagementApp.Application
             services.AddScoped<IGetProjectService, GetProjectService>();
             services.AddScoped<IGetAllProjectsService, GetAllProjectsService>();
             services.AddScoped<ICreateProjectTaskService, CreateProjectTaskService>();
+            services.AddScoped<IGetProjectTasksByProjectIdService, GetProjectTasksByProjectIdService>();
             
             return services;
         }

@@ -14,17 +14,20 @@ namespace TaskManagementApp.Api.Controllers
         private readonly IGetProjectService _getProjectService;
         private readonly IGetAllProjectsService _getAllProjectsService;
         private readonly ICreateProjectTaskService _createProjectTaskService;
+        private readonly IGetProjectTasksByProjectIdService _getProjectTasksByProjectIdService;
 
 
         public ProjectsController(ICreateProjectService projectService,
             IGetProjectService getProjectService,
             IGetAllProjectsService getAllProjectsService,
-            ICreateProjectTaskService createProjectTaskService)
+            ICreateProjectTaskService createProjectTaskService,
+            IGetProjectTasksByProjectIdService getProjectTasksByProjectIdService)
         {
             _projectService = projectService;
             _getProjectService = getProjectService;
             _getAllProjectsService = getAllProjectsService;
             _createProjectTaskService = createProjectTaskService;
+            _getProjectTasksByProjectIdService = getProjectTasksByProjectIdService;
         }
 
         /// <summary>
@@ -89,8 +92,27 @@ namespace TaskManagementApp.Api.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateProjectTask([FromRoute] Guid projectId, [FromBody] CreateProjectTaskRequest request)
         {
-            var response = await _createProjectTaskService.ExecuteAsync(projectId, request);            
+            var response = await _createProjectTaskService.ExecuteAsync(projectId, request);
             return StatusCode(StatusCodes.Status201Created, response);
+        }
+
+        /// <summary>
+        /// Lista todas as tarefas de um projeto.
+        /// </summary>
+        /// <param name="projectId">ID externo (GUID) do projeto.</param>
+        /// <returns>Lista de tarefas do projeto.</returns>
+        [HttpGet("{projectId}/tasks")]
+        [ProducesResponseType(typeof(IEnumerable<ProjectTaskResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetProjectTasksByProjectId([FromRoute] Guid projectId)
+        { 
+            var projectTasks = await _getProjectTasksByProjectIdService.ExecuteAsync(projectId);
+
+            if (projectTasks == null || !projectTasks.Any())
+                return NoContent();
+                
+            return Ok(projectTasks);
         }
     }
 }
