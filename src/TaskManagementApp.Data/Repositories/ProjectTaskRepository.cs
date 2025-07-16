@@ -16,7 +16,12 @@ namespace TaskManagementApp.Data.Repositories
 
         public async Task AddAsync(ProjectTask projectTask) => await _context.ProjectTasks.AddAsync(projectTask);
 
-        public async Task<ProjectTask?> GetByIdAsync(Guid id) => await _context.ProjectTasks.FirstOrDefaultAsync(pt => pt.ExternalId.Equals(id));
+        public async Task<ProjectTask?> GetByIdAsync(Guid id)
+        {
+            return await _context.ProjectTasks
+                                 .Include(pt => pt.Project)
+                                 .FirstOrDefaultAsync(pt => pt.ExternalId.Equals(id));
+        }
 
         public async Task<IEnumerable<ProjectTask>> GetAllByProjectIdAsync(Guid projectId)
         {
