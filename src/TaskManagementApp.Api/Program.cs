@@ -14,7 +14,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddDataInfrastructure(builder.Configuration);
 builder.Services.AddDomain();
-builder.Services.AddApplication();
+builder.Services.AddApplicationServices();
 
 var app = builder.Build();
 

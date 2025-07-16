@@ -21,12 +21,9 @@ namespace TaskManagementApp.Application.Projects
             var project = await _projectService.GetProjectByExternalIdAsync(id);
 
             if (project == null)
-            {
                 _logger.LogInformation("Projeto com ID: {ProjectId} não encontrado.", id);
-                return null;
-            }
 
-            return project.ToDto();
+            return project?.ToDto();
         }
     }
 }

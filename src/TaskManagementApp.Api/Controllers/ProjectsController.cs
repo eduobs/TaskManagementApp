@@ -8,16 +8,18 @@ namespace TaskManagementApp.Api.Controllers
     [Route("api/[controller]")]
     public class ProjectsController : ControllerBase
     {
-        private readonly ILogger<ProjectsController> _logger;
         private readonly ICreateProjectService _projectService;
         private readonly IGetProjectService _getProjectService;
+        private readonly IGetAllProjectsService _getAllProjectsService;
 
 
-        public ProjectsController(ILogger<ProjectsController> logger, ICreateProjectService projectService, IGetProjectService getProjectService)
+        public ProjectsController(ICreateProjectService projectService,
+            IGetProjectService getProjectService,
+            IGetAllProjectsService getAllProjectsService)
         {
-            _logger = logger;
             _projectService = projectService;
             _getProjectService = getProjectService;
+            _getAllProjectsService = getAllProjectsService;
         }
 
         /// <summary>
@@ -50,6 +52,23 @@ namespace TaskManagementApp.Api.Controllers
                 return NotFound();
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Lista todos os projetos.
+        /// </summary>
+        /// <returns>Lista de projetos.</returns>
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> GetAllProjects()
+        {
+            var projects = await _getAllProjectsService.ExecuteAsync();
+
+            if (projects == null || !projects.Any())
+                return NoContent();
+
+            return Ok(projects);
         }
     }
 }
