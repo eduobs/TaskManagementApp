@@ -10,7 +10,8 @@ namespace TaskManagementApp.Domain
         {
             // Register domain services
             services.AddScoped<IProjectService, ProjectService>();
-
+            services.AddScoped<IProjectTaskService, ProjectTaskService>();
+            
             return services;
         }
     }

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementApp.Application.Projects;
+using TaskManagementApp.Application.ProjectTasks;
 using TaskManagementApp.Models.Projects;
+using TaskManagementApp.Models.ProjectTasks;
 
 namespace TaskManagementApp.Api.Controllers
 {
@@ -11,15 +13,18 @@ namespace TaskManagementApp.Api.Controllers
         private readonly ICreateProjectService _projectService;
         private readonly IGetProjectService _getProjectService;
         private readonly IGetAllProjectsService _getAllProjectsService;
+        private readonly ICreateProjectTaskService _createProjectTaskService;
 
 
         public ProjectsController(ICreateProjectService projectService,
             IGetProjectService getProjectService,
-            IGetAllProjectsService getAllProjectsService)
+            IGetAllProjectsService getAllProjectsService,
+            ICreateProjectTaskService createProjectTaskService)
         {
             _projectService = projectService;
             _getProjectService = getProjectService;
             _getAllProjectsService = getAllProjectsService;
+            _createProjectTaskService = createProjectTaskService;
         }
 
         /// <summary>
@@ -69,6 +74,23 @@ namespace TaskManagementApp.Api.Controllers
                 return NoContent();
 
             return Ok(projects);
+        }
+
+        /// <summary>
+        /// Adiciona uma nova tarefa a um projeto.
+        /// </summary>
+        /// <param name="projectId">Id externo (GUID) do projeto ao qual a tarefa será adicionada.</param>
+        /// <param name="request">Dados para a criação da tarefa.</param>
+        /// <returns>Tarefa recém-criada.</returns>
+        [HttpPost("{projectId}/tasks")]
+        [ProducesResponseType(typeof(ProjectTaskResponse), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> CreateProjectTask([FromRoute] Guid projectId, [FromBody] CreateProjectTaskRequest request)
+        {
+            var response = await _createProjectTaskService.ExecuteAsync(projectId, request);            
+            return StatusCode(StatusCodes.Status201Created, response);
         }
     }
 }

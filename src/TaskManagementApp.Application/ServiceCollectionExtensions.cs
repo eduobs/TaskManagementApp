@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using TaskManagementApp.Application.Projects;
+using TaskManagementApp.Application.ProjectTasks;
 
 namespace TaskManagementApp.Application
 {
@@ -10,7 +11,8 @@ namespace TaskManagementApp.Application
             services.AddScoped<ICreateProjectService, CreateProjectService>();
             services.AddScoped<IGetProjectService, GetProjectService>();
             services.AddScoped<IGetAllProjectsService, GetAllProjectsService>();
-
+            services.AddScoped<ICreateProjectTaskService, CreateProjectTaskService>();
+            
             return services;
         }
     }
