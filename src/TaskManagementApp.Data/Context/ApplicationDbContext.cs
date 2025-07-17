@@ -13,7 +13,7 @@ namespace TaskManagementApp.Data.Context
         public DbSet<Project> Projects { get; set; }
         public DbSet<ProjectTask> ProjectTasks { get; set; }
         public DbSet<User> Users { get; set; }
-
+        public DbSet<ProjectTaskHistory> ProjectTaskHistories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +22,7 @@ namespace TaskManagementApp.Data.Context
             modelBuilder.ApplyConfiguration(new ProjectConfiguration());
             modelBuilder.ApplyConfiguration(new ProjectTaskConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
+            modelBuilder.ApplyConfiguration(new ProjectTaskHistoryConfiguration());
         }
     }
 }

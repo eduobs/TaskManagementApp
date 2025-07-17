@@ -18,7 +18,7 @@ namespace TaskManagementApp.Application.ProjectTasks
             _logger = logger;
         }
 
-        public async Task<ProjectTaskResponse?> ExecuteAsync(Guid id, UpdateProjectTaskStatusRequest request)
+        public async Task<ProjectTaskResponse?> ExecuteAsync(Guid id, UpdateProjectTaskStatusRequest request, Guid modifiedByUserId)
         {
             _logger.LogInformation(
                 "Iniciando atualização de status para a tarefa {TaskExternalId} com status {NewStatus}.",
@@ -28,7 +28,8 @@ namespace TaskManagementApp.Application.ProjectTasks
 
             var success = await _projectTaskDomainService.UpdateProjectTaskStatusAsync(
                 id,
-                (Domain.Enums.ProjectTaskStatus)request.Status
+                (Domain.Enums.ProjectTaskStatus)request.Status,
+                modifiedByUserId
             );
 
             if (!success)

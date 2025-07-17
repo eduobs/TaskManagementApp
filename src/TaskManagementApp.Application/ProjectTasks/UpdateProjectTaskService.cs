@@ -18,7 +18,7 @@ namespace TaskManagementApp.Application.ProjectTasks
             _logger = logger;
         }
         
-        public async Task<ProjectTaskResponse?> ExecuteAsync(Guid id, UpdateProjectTaskRequest request)
+        public async Task<ProjectTaskResponse?> ExecuteAsync(Guid id, UpdateProjectTaskRequest request, Guid modifiedByUserId)
         {
             _logger.LogInformation("Iniciando atualização para a tarefa {TaskExternalId}.", id);
 
@@ -26,7 +26,8 @@ namespace TaskManagementApp.Application.ProjectTasks
                 id,
                 request.Title,
                 request.Description,
-                request.Deadline
+                request.Deadline,
+                modifiedByUserId
             );
 
             if (!success)

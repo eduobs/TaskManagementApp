@@ -37,16 +37,18 @@ namespace TaskManagementApp.Domain.Interfaces
         /// <param name="newTitle">Novo título da tarefa</param>
         /// <param name="newDescription">Nova descrição da tarefa</param>
         /// <param name="newDeadline">Nova data limite para a conclusão da tarefa</param>
+        /// <param name="modifiedByUserId">Id do usuário que está modificando a tarefa</param>
         /// <returns>Booleano para confirmar se a tarefa foi atualizada</returns>
-        Task<bool> UpdateProjectTaskDetailsAsync(Guid taskExternalId, string newTitle, string newDescription, DateTime newDeadline);
+        Task<bool> UpdateProjectTaskDetailsAsync(Guid taskExternalId, string newTitle, string newDescription, DateTime newDeadline, Guid modifiedByUserId);
 
         /// <summary>
         /// Serviço para atualizar o status de uma tarefa.
         /// </summary>
         /// <param name="taskExternalId">Identidicação da tarefa a ser atualizada</param>
         /// <param name="newStatus">Novo status da tarefa</param>
+        /// <param name="modifiedByUserId">Id do usuário que está modificando a tarefa</param>
         /// <returns>Booleano para confirmar se a tarefa foi atualizada</returns>
-        Task<bool> UpdateProjectTaskStatusAsync(Guid taskExternalId, ProjectTaskStatus newStatus);
+        Task<bool> UpdateProjectTaskStatusAsync(Guid taskExternalId, ProjectTaskStatus newStatus, Guid modifiedByUserId);
 
         /// <summary>
         /// Serviço para remover uma tarefa.

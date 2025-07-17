@@ -27,14 +27,21 @@ namespace TaskManagementApp.Api.Controllers
         /// </summary>
         /// <param name="taskId">ID externo (GUID) da tarefa a ser atualizada.</param>
         /// <param name="request">Dados para a atualização da tarefa.</param>
+        /// <param name="xUserId">ID externo (GUID) do usuário que realizou a atualização.</param>
         /// <returns>Tarefa atualizada.</returns>
         [HttpPut("{taskId}")]
         [ProducesResponseType(typeof(ProjectTaskResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateProjectTask([FromRoute] Guid taskId, [FromBody] UpdateProjectTaskRequest request)
+        public async Task<IActionResult> UpdateProjectTask(
+            [FromRoute] Guid taskId,
+            [FromBody] UpdateProjectTaskRequest request,
+            [FromHeader(Name = "X-User-Id")] Guid xUserId)
         {
-            var response = await _updateProjectTaskService.ExecuteAsync(taskId, request);
+            if (xUserId == Guid.Empty)
+                return BadRequest(new { message = "O cabeçalho 'X-User-Id' é obrigatório e deve ser um GUID válido." });
+
+            var response = await _updateProjectTaskService.ExecuteAsync(taskId, request, xUserId);
 
             if (response == null)
                 return NotFound();
@@ -47,14 +54,21 @@ namespace TaskManagementApp.Api.Controllers
         /// </summary>
         /// <param name="taskId">ID externo (GUID) da tarefa cujo status será atualizado.</param>
         /// <param name="request">Dados para a atualização do status.</param>
+        /// <param name="xUserId">ID externo (GUID) do usuário que realizou a atualização.</param>
         /// <returns>Tarefa com o status atualizado.</returns>
         [HttpPatch("{taskId}/status")]
         [ProducesResponseType(typeof(ProjectTaskResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateProjectTaskStatus([FromRoute] Guid taskId, [FromBody] UpdateProjectTaskStatusRequest request)
+        public async Task<IActionResult> UpdateProjectTaskStatus(
+            [FromRoute] Guid taskId,
+            [FromBody] UpdateProjectTaskStatusRequest request,
+            [FromHeader(Name = "X-User-Id")] Guid xUserId)
         {
-            var response = await _updateProjectTaskStatusService.ExecuteAsync(taskId, request);
+            if (xUserId == Guid.Empty)
+                return BadRequest(new { message = "O cabeçalho 'X-User-Id' é obrigatório e deve ser um GUID válido." });
+
+            var response = await _updateProjectTaskStatusService.ExecuteAsync(taskId, request, xUserId);
 
             if (response == null)
                 return NotFound();

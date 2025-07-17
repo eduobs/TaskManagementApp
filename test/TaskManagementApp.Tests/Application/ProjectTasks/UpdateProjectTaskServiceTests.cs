@@ -32,6 +32,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             // Arrange
             var taskExternalId = Guid.NewGuid();
             var projectIdOriginal = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var projectIdInterno = 1;
 
             var request = new UpdateProjectTaskRequest
@@ -70,7 +71,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     taskExternalId,
                     request.Title,
                     request.Description,
-                    request.Deadline
+                    request.Deadline,
+                    userId
                 ))
                 .ReturnsAsync(true);
 
@@ -79,7 +81,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 .ReturnsAsync(task);
 
             // Act
-            var result = await _updateProjectTaskService.ExecuteAsync(taskExternalId, request);
+            var result = await _updateProjectTaskService.ExecuteAsync(taskExternalId, request, userId);
 
             // Assert
             result.Should().NotBeNull();
@@ -95,7 +97,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 taskExternalId,
                 request.Title,
                 request.Description,
-                request.Deadline
+                request.Deadline,
+                userId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(taskExternalId), Times.Once());
@@ -108,6 +111,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var request = new UpdateProjectTaskRequest
             {
                 Title = "Título",
@@ -120,12 +124,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     taskExternalId,
                     It.IsAny<string>(),
                     It.IsAny<string>(),
-                    It.IsAny<DateTime>()
+                    It.IsAny<DateTime>(),
+                    userId
                 ))
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _updateProjectTaskService.ExecuteAsync(taskExternalId, request);
+            var result = await _updateProjectTaskService.ExecuteAsync(taskExternalId, request, userId);
 
             // Assert
             result.Should().BeNull();
@@ -134,7 +139,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 taskExternalId,
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<DateTime>()
+                It.IsAny<DateTime>(),
+                userId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
@@ -147,6 +153,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var request = new UpdateProjectTaskRequest
             {
                 Title = "Novo Título",
@@ -161,12 +168,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     taskExternalId,
                     request.Title,
                     request.Description,
-                    request.Deadline
+                    request.Deadline,
+                    userId
                 ))
                 .ThrowsAsync(exception);
 
             // Act & Assert
-            Func<Task> act = async () => await _updateProjectTaskService.ExecuteAsync(taskExternalId, request);
+            Func<Task> act = async () => await _updateProjectTaskService.ExecuteAsync(taskExternalId, request, userId);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage(exception.Message);
 
@@ -174,7 +182,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 taskExternalId,
                 request.Title,
                 request.Description,
-                request.Deadline
+                request.Deadline,
+                userId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
@@ -187,6 +196,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var request = new UpdateProjectTaskRequest
             {
                 Title = "Titulo",
@@ -201,12 +211,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     taskExternalId,
                     request.Title,
                     request.Description,
-                    request.Deadline
+                    request.Deadline,
+                    userId
                 ))
                 .ThrowsAsync(exception);
 
             // Act & Assert
-            Func<Task> act = async () => await _updateProjectTaskService.ExecuteAsync(taskExternalId, request);
+            Func<Task> act = async () => await _updateProjectTaskService.ExecuteAsync(taskExternalId, request, userId);
 
             await act.Should().ThrowAsync<Exception>().WithMessage(exception.Message);
 
@@ -214,7 +225,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 taskExternalId,
                 request.Title,
                 request.Description,
-                request.Deadline
+                request.Deadline,
+                userId
             ), Times.Once());
             
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
