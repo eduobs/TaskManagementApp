@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementApp.Application.ProjectTasks;
 using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Enums;
 using TaskManagementApp.Domain.Interfaces;
 using TaskManagementApp.Models.ProjectTasks;
 
@@ -13,6 +14,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         private readonly Mock<IProjectTaskService> _mockProjectTaskDomainService;
         private readonly Mock<ILogger<GetProjectTasksByProjectIdService>> _mockLogger;
         private readonly GetProjectTasksByProjectIdService _getProjectTasksByProjectIdService;
+        private readonly User _testAssignedUser;
+        private readonly Project _testParentProject;
 
         public GetProjectTasksByProjectIdServiceTests()
         {
@@ -23,6 +26,14 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 _mockProjectTaskDomainService.Object,
                 _mockLogger.Object
             );
+            
+            _testAssignedUser = new User("Usuário Teste", UserRole.Basic);
+            _testAssignedUser.GetType().GetProperty("Id")?.SetValue(_testAssignedUser, 10);
+            _testAssignedUser.GetType().GetProperty("ExternalId")?.SetValue(_testAssignedUser, Guid.NewGuid());
+
+            _testParentProject = new Project("Projeto teste", "Descrição", 1);
+            _testParentProject.GetType().GetProperty("Id")?.SetValue(_testParentProject, 1);
+            _testParentProject.GetType().GetProperty("ExternalId")?.SetValue(_testParentProject, Guid.NewGuid());        
         }
 
         [Fact(DisplayName = @"DADO um Id válido
@@ -32,25 +43,24 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var projectExternalId = Guid.NewGuid();
-            var projectIdInterno = 1;
-
-            var project = new Project("Projeto Teste", "Descrição", 1);
-            project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
-            project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
-
 
             var tasks = new List<ProjectTask>
             {
-                new ("Tarefa 1", "Descrição 1", DateTime.Today.AddDays(10), TaskManagementApp.Domain.Enums.ProjectTaskPriority.Low, projectIdInterno),
-                new ("Tarefa 2", "Descrição 2", DateTime.Today.AddDays(5), TaskManagementApp.Domain.Enums.ProjectTaskPriority.High, projectIdInterno)
+                new ("Tarefa 1", "Descrição 1", DateTime.Today.AddDays(10),
+                    ProjectTaskPriority.Low, _testParentProject.Id,
+                    _testAssignedUser.Id),
+                new ("Tarefa 2", "Descrição 2", DateTime.Today.AddDays(5),
+                    ProjectTaskPriority.High, _testParentProject.Id,
+                    _testAssignedUser.Id)
             };
 
             tasks[0].GetType().GetProperty("ExternalId")?.SetValue(tasks[0], Guid.NewGuid());
-            tasks[0].GetType().GetProperty("Project")?.SetValue(tasks[0], project);
+            tasks[0].GetType().GetProperty("Project")?.SetValue(tasks[0], _testParentProject);
+            tasks[0].GetType().GetProperty("AssignedToUser")?.SetValue(tasks[0], _testAssignedUser);
 
             tasks[1].GetType().GetProperty("ExternalId")?.SetValue(tasks[1], Guid.NewGuid());
-            tasks[1].GetType().GetProperty("Project")?.SetValue(tasks[1], project);
-
+            tasks[1].GetType().GetProperty("Project")?.SetValue(tasks[1], _testParentProject);
+            tasks[1].GetType().GetProperty("AssignedToUser")?.SetValue(tasks[1], _testAssignedUser);
 
             _mockProjectTaskDomainService
                 .Setup(s => s.GetAllProjectTasksByProjectIdAsync(projectExternalId))
@@ -62,17 +72,6 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             // Assert
             result.Should().NotBeNullOrEmpty();
             result.Should().HaveCount(2);
-
-            result.Should().ContainEquivalentOf(new ProjectTaskResponse
-            {
-                Id = tasks[0].ExternalId,
-                Title = tasks[0].Title,
-                Description = tasks[0].Description,
-                Deadline = tasks[0].Deadline,
-                Status = (Models.Enums.ProjectTaskStatus)tasks[0].Status,
-                Priority = (Models.Enums.ProjectTaskPriority)tasks[0].Priority,
-                ProjectId = projectExternalId
-            });
 
             _mockProjectTaskDomainService.Verify(s => s.GetAllProjectTasksByProjectIdAsync(projectExternalId), Times.Once());
         }

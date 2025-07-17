@@ -11,5 +11,7 @@ namespace TaskManagementApp.Models.ProjectTasks
         public ProjectTaskStatus Status { get; set; }
         public ProjectTaskPriority Priority { get; set; }
         public Guid ProjectId { get; set; }
+        public Guid AssignedToUserId { get; set; }
+        public string AssignedToUserName { get; set; } = string.Empty;
     }
 }

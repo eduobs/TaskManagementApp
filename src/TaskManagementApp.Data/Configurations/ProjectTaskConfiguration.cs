@@ -53,6 +53,13 @@ namespace TaskManagementApp.Data.Configurations
             builder.Property(pt => pt.UpdatedAt)
                    .IsRequired();
 
+            builder.Property(pt => pt.AssignedToUserId)
+                   .IsRequired();
+
+            builder.HasOne(pt => pt.AssignedToUser)
+                   .WithMany()
+                   .HasForeignKey(pt => pt.AssignedToUserId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -13,8 +13,9 @@ namespace TaskManagementApp.Domain.Interfaces
         /// <param name="description">Descrição da tarefa</param>
         /// <param name="deadline">Data limite para a conclusão da tarefa</param>
         /// <param name="priority">Prioridade da tarefa (1-Baixa, 2-Média, 3-Alta)</param>
+        /// <param name="userId">Id do usuário responsável pela tarefa</param>
         /// <returns></returns>
-        Task<ProjectTask> CreateProjectTaskAsync(Guid projectExternalId, string title, string description, DateTime deadline, ProjectTaskPriority priority);
+        Task<ProjectTask> CreateProjectTaskAsync(Guid projectExternalId, string title, string description, DateTime deadline, ProjectTaskPriority priority, Guid userId);
 
         /// <summary>
         /// Serviço para obter uma tarefa pelo seu ExternalId.

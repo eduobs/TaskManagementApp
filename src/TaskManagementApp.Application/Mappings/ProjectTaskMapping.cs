@@ -17,7 +17,9 @@ namespace TaskManagementApp.Application.Mappings
                 Deadline = projectTask.Deadline,
                 Status = (Models.Enums.ProjectTaskStatus)projectTask.Status,
                 Priority = (Models.Enums.ProjectTaskPriority)projectTask.Priority,
-                ProjectId = projectTask.Project.ExternalId
+                ProjectId = projectTask.Project?.ExternalId ?? Guid.Empty,
+                AssignedToUserId = projectTask.AssignedToUser?.ExternalId ?? Guid.Empty,
+                AssignedToUserName = projectTask.AssignedToUser?.Name ?? "Usuário Desconhecido"
             };
         }
     }

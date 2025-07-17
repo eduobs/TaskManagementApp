@@ -19,7 +19,7 @@ namespace TaskManagementApp.Application.ProjectTasks
             _logger = logger;
         }
 
-        public async Task<ProjectTaskResponse> ExecuteAsync(Guid projectExternalId, CreateProjectTaskRequest request)
+        public async Task<ProjectTaskResponse> ExecuteAsync(Guid projectExternalId, CreateProjectTaskRequest request, Guid userExternalId)
         {
             _logger.LogInformation("Iniciando a execução criação de uma tarefa para o projeto {ProjectExternalId}.", projectExternalId);
 
@@ -28,7 +28,8 @@ namespace TaskManagementApp.Application.ProjectTasks
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (ProjectTaskPriority)request.Priority
+                (ProjectTaskPriority)request.Priority,
+                userExternalId
             );
 
             var response = projectTask.ToDto();

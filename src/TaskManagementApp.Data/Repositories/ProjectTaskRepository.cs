@@ -20,6 +20,7 @@ namespace TaskManagementApp.Data.Repositories
         {
             return await _context.ProjectTasks
                                  .Include(pt => pt.Project)
+                                 .Include(pt => pt.AssignedToUser)
                                  .FirstOrDefaultAsync(pt => pt.ExternalId.Equals(id));
         }
 
@@ -28,6 +29,7 @@ namespace TaskManagementApp.Data.Repositories
             return await _context.ProjectTasks
                                 .Where(pt => pt.Project.ExternalId.Equals(projectId))
                                 .Include(pt => pt.Project)
+                                .Include(pt => pt.AssignedToUser)
                                 .ToListAsync();
         }
 

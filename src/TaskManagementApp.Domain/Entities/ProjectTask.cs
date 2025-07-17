@@ -6,7 +6,7 @@ namespace TaskManagementApp.Domain.Entities
     {
         private ProjectTask() { }
 
-        public ProjectTask(string title, string description, DateTime deadline, ProjectTaskPriority priority, int projectId)
+        public ProjectTask(string title, string description, DateTime deadline, ProjectTaskPriority priority, int projectId, int assignedToUserId)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("O título da tarefa não pode ser nulo ou vazio.", nameof(title));
@@ -18,8 +18,10 @@ namespace TaskManagementApp.Domain.Entities
                 throw new ArgumentException("A data de vencimento não pode ser no passado.", nameof(deadline));
 
             if (projectId <= 0)
-                throw new ArgumentException("O ID do projeto deve ser válido.", nameof(projectId));
+                throw new ArgumentException("O id do projeto deve ser válido.", nameof(projectId));
 
+            if (assignedToUserId <= 0)
+                throw new ArgumentException("O id do usuário responsável pela tarefa é inválido.", nameof(assignedToUserId));
 
             ExternalId = Guid.NewGuid();
             Title = title;
@@ -30,6 +32,7 @@ namespace TaskManagementApp.Domain.Entities
             ProjectId = projectId;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
+            AssignedToUserId = assignedToUserId;
         }
 
         public int Id { get; private set; }
@@ -54,6 +57,10 @@ namespace TaskManagementApp.Domain.Entities
 
         public DateTime UpdatedAt { get; private set; }
 
+        public int AssignedToUserId { get; private set; }
+
+        public User AssignedToUser { get; private set; } = null!;
+
         public void UpdateDetails(string title, string description, DateTime deadline)
         {
             if (string.IsNullOrWhiteSpace(title))
@@ -75,7 +82,6 @@ namespace TaskManagementApp.Domain.Entities
         {
             Status = status;
             UpdatedAt = DateTime.UtcNow;
-        
         }
     }
 }

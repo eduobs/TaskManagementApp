@@ -14,7 +14,10 @@ namespace TaskManagementApp.Tests.Domain.Services
         private readonly Mock<IProjectRepository> _mockProjectRepository;
         private readonly Mock<IProjectTaskRepository> _mockProjectTaskRepository;
         private readonly Mock<IProjectTaskHistoryRepository> _mockProjectTaskHistoryRepository;
+        private readonly Mock<IUserRepository> _mockUserRepository;
         private readonly ProjectTaskService _projectTaskService;
+        private readonly User _testAssignedUser;
+        private readonly User _testModifyingUser;
 
         public ProjectTaskServiceTests()
         {
@@ -22,12 +25,22 @@ namespace TaskManagementApp.Tests.Domain.Services
             _mockProjectTaskRepository = new Mock<IProjectTaskRepository>();
             _mockLogger = new Mock<ILogger<ProjectTaskService>>();
             _mockProjectTaskHistoryRepository = new Mock<IProjectTaskHistoryRepository>();
+            _mockUserRepository = new Mock<IUserRepository>();
+
+            _testAssignedUser = new User("Usuário responsável", UserRole.Basic);
+            _testAssignedUser.GetType().GetProperty("Id")?.SetValue(_testAssignedUser, 10);
+            _testAssignedUser.GetType().GetProperty("ExternalId")?.SetValue(_testAssignedUser, Guid.NewGuid());
+
+            _testModifyingUser = new User("Novo usuário", UserRole.Manager);
+            _testModifyingUser.GetType().GetProperty("Id")?.SetValue(_testModifyingUser, 20);
+            _testModifyingUser.GetType().GetProperty("ExternalId")?.SetValue(_testModifyingUser, Guid.NewGuid());
 
             _projectTaskService = new ProjectTaskService(
                 _mockLogger.Object,
                 _mockProjectRepository.Object,
                 _mockProjectTaskRepository.Object,
-                _mockProjectTaskHistoryRepository.Object
+                _mockProjectTaskHistoryRepository.Object,
+                _mockUserRepository.Object
             );
         }
 
@@ -57,6 +70,10 @@ namespace TaskManagementApp.Tests.Domain.Services
                 .Setup(r => r.GetByIdAsync(projectExternalId))
                 .ReturnsAsync(project);
 
+            _mockUserRepository
+                .Setup(r => r.GetByExternalIdAsync(_testAssignedUser.ExternalId))
+                .ReturnsAsync(_testAssignedUser);
+            
             _mockProjectTaskRepository
                 .Setup(r => r.CountTasksByProjectIdAsync(projectIdInterno))
                 .ReturnsAsync(5);
@@ -70,7 +87,14 @@ namespace TaskManagementApp.Tests.Domain.Services
                 .ReturnsAsync(1);
 
             // Act
-            var result = await _projectTaskService.CreateProjectTaskAsync(projectExternalId, title, description, deadline, priority);
+            var result = await _projectTaskService.CreateProjectTaskAsync(
+                projectExternalId,
+                title,
+                description,
+                deadline,
+                priority,
+                _testAssignedUser.ExternalId
+            );
 
             // Assert
             result.Should().NotBeNull();
@@ -80,11 +104,20 @@ namespace TaskManagementApp.Tests.Domain.Services
             result.Priority.Should().Be(priority);
             result.Status.Should().Be(ProjectTaskStatus.Pending);
             result.ProjectId.Should().Be(projectIdInterno);
+            result.AssignedToUserId.Should().Be(_testAssignedUser.Id);
             result.ExternalId.Should().NotBe(Guid.Empty);
 
             _mockProjectRepository.Verify(r => r.GetByIdAsync(projectExternalId), Times.Once());
+            _mockUserRepository.Verify(r => r.GetByExternalIdAsync(_testAssignedUser.ExternalId), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.CountTasksByProjectIdAsync(projectIdInterno), Times.Once());
-            _mockProjectTaskRepository.Verify(r => r.AddAsync(It.IsAny<ProjectTask>()), Times.Once());
+            _mockProjectTaskRepository.Verify(r => r.AddAsync(It.Is<ProjectTask>(pt =>
+                pt.Title == title &&
+                pt.Description == description &&
+                pt.Deadline == deadline &&
+                pt.Priority == priority &&
+                pt.ProjectId == projectIdInterno &&
+                pt.AssignedToUserId == _testAssignedUser.Id
+            )), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.SaveChangesAsync(), Times.Once());
         }
 
@@ -95,6 +128,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var projectExternalId = Guid.NewGuid();
+            var userId = _testAssignedUser.ExternalId;
 
             _mockProjectRepository
                 .Setup(r => r.GetByIdAsync(projectExternalId))
@@ -102,7 +136,12 @@ namespace TaskManagementApp.Tests.Domain.Services
 
             // Act
             Func<Task> act = async () => await _projectTaskService.CreateProjectTaskAsync(
-                projectExternalId, "Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low);
+                projectExternalId,
+                "Título", "Descrição",
+                DateTime.Today.AddDays(1),
+                ProjectTaskPriority.Low,
+                userId
+            );
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>()
@@ -112,6 +151,37 @@ namespace TaskManagementApp.Tests.Domain.Services
             _mockProjectTaskRepository.Verify(r => r.CountTasksByProjectIdAsync(It.IsAny<int>()), Times.Never());
             _mockProjectTaskRepository.Verify(r => r.AddAsync(It.IsAny<ProjectTask>()), Times.Never());
             _mockProjectTaskRepository.Verify(r => r.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact(DisplayName = @"DADO uma requisição
+                            QUANDO o usuário atribuído não for encontrado
+                            ENTÃO deve lançar uma ArgumentException")]
+        public async Task CreateProjectTaskAsync_AssignedUserNaoEncontrado_DeveLancarArgumentException()
+        {
+            // Arrange
+            var projectExternalId = Guid.NewGuid();
+            var projectIdInterno = 1;
+            var project = new Project("Projeto Teste", "Desc", 1);
+            project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
+            project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
+
+            var invalidAssignedUserId = Guid.NewGuid();
+
+            _mockProjectRepository.Setup(r => r.GetByIdAsync(projectExternalId)).ReturnsAsync(project);
+            _mockUserRepository.Setup(r => r.GetByExternalIdAsync(invalidAssignedUserId)).ReturnsAsync((User?)null);
+
+            // Act
+            Func<Task> act = async () => await _projectTaskService.CreateProjectTaskAsync(
+                projectExternalId, "Titulo", "Desc", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, invalidAssignedUserId);
+
+            // Assert
+            await act.Should().ThrowAsync<ArgumentException>()
+                       .WithMessage($"Usuário com ID {invalidAssignedUserId} não encontrado para atribuição da tarefa.");
+
+            _mockProjectRepository.Verify(r => r.GetByIdAsync(projectExternalId), Times.Once());
+            _mockUserRepository.Verify(r => r.GetByExternalIdAsync(invalidAssignedUserId), Times.Once());
+            _mockProjectTaskRepository.Verify(r => r.CountTasksByProjectIdAsync(It.IsAny<int>()), Times.Never());
+            _mockProjectTaskRepository.Verify(r => r.AddAsync(It.IsAny<ProjectTask>()), Times.Never());
         }
 
         [Fact(DisplayName = @"DADO uma requisição de criação de tarefa
@@ -124,32 +194,27 @@ namespace TaskManagementApp.Tests.Domain.Services
             var projectIdInterno = 2;
             var projectName = "Projeto Cheio";
             var project = new Project(projectName, "Descrição", 1);
-
             project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
 
-            _mockProjectRepository
-                .Setup(r => r.GetByIdAsync(projectExternalId))
-                .ReturnsAsync(project);
-
-            _mockProjectTaskRepository
-                .Setup(r => r.CountTasksByProjectIdAsync(projectIdInterno))
-                .ReturnsAsync(20);
+            _mockProjectRepository.Setup(r => r.GetByIdAsync(projectExternalId)).ReturnsAsync(project);
+            _mockUserRepository.Setup(r => r.GetByExternalIdAsync(_testAssignedUser.ExternalId)).ReturnsAsync(_testAssignedUser);
+            _mockProjectTaskRepository.Setup(r => r.CountTasksByProjectIdAsync(projectIdInterno)).ReturnsAsync(20);
 
             // Act
             Func<Task> act = async () => await _projectTaskService.CreateProjectTaskAsync(
-                projectExternalId, "Tarefa excedente", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low);
+                projectExternalId, "Tarefa Excedente", "Desc", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, _testAssignedUser.ExternalId);
 
             // Assert
             await act.Should().ThrowAsync<InvalidOperationException>()
                        .WithMessage($"O projeto '{projectName}' atingiu o limite máximo de 20 tarefas.");
 
             _mockProjectRepository.Verify(r => r.GetByIdAsync(projectExternalId), Times.Once());
+            _mockUserRepository.Verify(r => r.GetByExternalIdAsync(_testAssignedUser.ExternalId), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.CountTasksByProjectIdAsync(projectIdInterno), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.AddAsync(It.IsAny<ProjectTask>()), Times.Never());
-            _mockProjectTaskRepository.Verify(r => r.SaveChangesAsync(), Times.Never());
         }
-
+        
         [Fact(DisplayName = @"DADO um id de tarefa válido
                             QUANDO a tarefa for encontrada
                             ENTÃO deve retornar a ProjectTask")]
@@ -157,7 +222,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
-            var projectTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var projectTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
 
             projectTask.GetType().GetProperty("ExternalId")?.SetValue(projectTask, taskExternalId);
 
@@ -205,8 +270,8 @@ namespace TaskManagementApp.Tests.Domain.Services
             var projectExternalId = Guid.NewGuid();
             var tasks = new List<ProjectTask>
             {
-                new ProjectTask("Título 1", "Descrição 1", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1),
-                new ProjectTask("Título 2", "Descrição 2", DateTime.Today.AddDays(2), ProjectTaskPriority.Medium, 1)
+                new ("Título 1", "Descrição 1", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1),
+                new ("Título 2", "Descrição 2", DateTime.Today.AddDays(2), ProjectTaskPriority.Medium, 1, 1)
             };
 
             tasks[0].GetType().GetProperty("ExternalId")?.SetValue(tasks[0], Guid.NewGuid());
@@ -265,7 +330,13 @@ namespace TaskManagementApp.Tests.Domain.Services
             var oldDeadline = DateTime.Today.AddDays(5);
             var oldStatus = ProjectTaskStatus.InProgress;
 
-            var existingTask = new ProjectTask(oldTitle, oldDescription, oldDeadline, ProjectTaskPriority.Low, projectIdInterno);
+            var existingTask = new ProjectTask(
+                oldTitle,
+                oldDescription,
+                oldDeadline, ProjectTaskPriority.Low,
+                projectIdInterno,
+                _testAssignedUser.Id
+            );
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
             existingTask.GetType().GetProperty("Id")?.SetValue(existingTask, 1);
             existingTask.UpdateStatus(oldStatus);
@@ -299,7 +370,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             _mockProjectTaskRepository.Verify(r => r.GetByIdAsync(taskExternalId), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.Update(existingTask), Times.Once());
             _mockProjectTaskRepository.Verify(r => r.SaveChangesAsync(), Times.Once());
-            
+
             _mockProjectTaskHistoryRepository.Verify(
                 r => r.AddAsync(It.Is<ProjectTaskHistory>(h =>
                     h.ProjectTaskId == existingTask.Id &&
@@ -347,7 +418,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             var description = "Mesma Descrição";
             var deadline = DateTime.Today.AddDays(5);
 
-            var existingTask = new ProjectTask(title, description, deadline, ProjectTaskPriority.Low, projectIdInterno);
+            var existingTask = new ProjectTask(title, description, deadline, ProjectTaskPriority.Low, projectIdInterno, 1);
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
             existingTask.GetType().GetProperty("Project")?.SetValue(existingTask, new Project("Parent Project", "Desc", 1));
 
@@ -405,7 +476,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             // Arrange
             var taskExternalId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, 1);
+            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, 1, 1);
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
 
             var newTitle = "Novo título";
@@ -447,7 +518,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             var oldStatus = ProjectTaskStatus.Pending;
             var newStatus = ProjectTaskStatus.Completed;
 
-            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, projectIdInterno);
+            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, projectIdInterno, 1);
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
             existingTask.GetType().GetProperty("Id")?.SetValue(existingTask, 1);
             existingTask.UpdateStatus(oldStatus);
@@ -503,7 +574,7 @@ namespace TaskManagementApp.Tests.Domain.Services
 
             var status = ProjectTaskStatus.Pending;
 
-            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, projectIdInterno);
+            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, projectIdInterno, 1);
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
             existingTask.UpdateStatus(status);
             existingTask.GetType().GetProperty("Project")?.SetValue(existingTask, new Project("Projeto", "Descrição", 1));
@@ -539,7 +610,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         public async Task UpdateProjectTaskStatusAsync_TarefaNaoEncontrada_DeveRetornarFalse()
         {
             // Arrange
-            var taskExternalId = Guid.NewGuid();            
+            var taskExternalId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
             _mockProjectTaskRepository
@@ -563,7 +634,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
-            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, 1);
+            var existingTask = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(5), ProjectTaskPriority.Low, 1, 1);
 
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
 

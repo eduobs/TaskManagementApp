@@ -9,7 +9,8 @@ namespace TaskManagementApp.Application.ProjectTasks
         /// </summary>
         /// <param name="projectExternalId">Id do projeto ao qual a tarefa pertence.</param>
         /// <param name="request">Dados para a criação da tarefa.</param>
+        /// <param name="userExternalId">Id do usuário responsável pela tarefa.</param>
         /// <returns>Tarefa que foi criada.</returns>
-        Task<ProjectTaskResponse> ExecuteAsync(Guid projectExternalId, CreateProjectTaskRequest request);
+        Task<ProjectTaskResponse> ExecuteAsync(Guid projectExternalId, CreateProjectTaskRequest request, Guid userExternalId);
     }
 }

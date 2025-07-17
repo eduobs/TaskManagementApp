@@ -97,9 +97,15 @@ namespace TaskManagementApp.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> CreateProjectTask([FromRoute] Guid projectId, [FromBody] CreateProjectTaskRequest request)
+        public async Task<IActionResult> CreateProjectTask(
+            [FromRoute] Guid projectId,
+            [FromBody] CreateProjectTaskRequest request,
+            [FromHeader(Name = "X-User-Id")] Guid xUserId)
         {
-            var response = await _createProjectTaskService.ExecuteAsync(projectId, request);
+            if (xUserId.Equals(Guid.Empty))
+                return BadRequest(new ErrorResponse("INVALID_ARGUMENT", "O cabeçalho 'X-User-Id' é obrigatório e deve ser um GUID válido."));
+
+            var response = await _createProjectTaskService.ExecuteAsync(projectId, request, xUserId);
             return StatusCode(StatusCodes.Status201Created, response);
         }
 

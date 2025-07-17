@@ -11,28 +11,40 @@ namespace TaskManagementApp.Domain.Services
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectTaskRepository _projectTaskRepository;
         private readonly IProjectTaskHistoryRepository _projectTaskHistoryRepository;
+        private readonly IUserRepository _userRepository;
 
         public ProjectTaskService(
             ILogger<ProjectTaskService> logger,
             IProjectRepository projectRepository,
             IProjectTaskRepository projectTaskRepository,
-            IProjectTaskHistoryRepository projectTaskHistoryRepository)
+            IProjectTaskHistoryRepository projectTaskHistoryRepository,
+            IUserRepository userRepository)
         {
             _logger = logger;
             _projectRepository = projectRepository;
             _projectTaskRepository = projectTaskRepository;
             _projectTaskHistoryRepository = projectTaskHistoryRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<ProjectTask> CreateProjectTaskAsync(Guid projectExternalId, string title, string description, DateTime deadline, ProjectTaskPriority priority)
+        public async Task<ProjectTask> CreateProjectTaskAsync(Guid projectExternalId, string title, string description, DateTime deadline, ProjectTaskPriority priority, Guid userId)
         {
             _logger.LogInformation("Iniciando criação da tarefa para o projeto {ProjectExternalId}.", projectExternalId);
+            _logger.LogInformation("Iniciando criação da tarefa para o projeto {ProjectExternalId} atribuída ao usuário {UserId}.", projectExternalId, userId);
+
 
             var project = await _projectRepository.GetByIdAsync(projectExternalId);
             if (project == null)
             {
                 _logger.LogWarning("Projeto com ExternalId {ProjectExternalId} não encontrado.", projectExternalId);
                 throw new ArgumentException($"Projeto com ID {projectExternalId} não encontrado.");
+            }
+
+            var assignedToUser = await _userRepository.GetByExternalIdAsync(userId);
+            if (assignedToUser == null)
+            {
+                _logger.LogWarning("Usuário atribuído com ExternalId {UserId} não encontrado.", userId);
+                throw new ArgumentException($"Usuário com ID {userId} não encontrado para atribuição da tarefa.");
             }
 
             var currentTaskCount = await _projectTaskRepository.CountTasksByProjectIdAsync(project.Id);
@@ -42,7 +54,7 @@ namespace TaskManagementApp.Domain.Services
                 throw new InvalidOperationException($"O projeto '{project.Name}' atingiu o limite máximo de 20 tarefas.");
             }
 
-            var projectTask = new ProjectTask(title, description, deadline, priority, project.Id);
+            var projectTask = new ProjectTask(title, description, deadline, priority, project.Id, assignedToUser.Id);
 
             await _projectTaskRepository.AddAsync(projectTask);
             await _projectTaskRepository.SaveChangesAsync();

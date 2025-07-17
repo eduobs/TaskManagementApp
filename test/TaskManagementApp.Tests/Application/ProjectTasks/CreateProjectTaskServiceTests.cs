@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementApp.Application.ProjectTasks;
 using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Enums;
 using TaskManagementApp.Domain.Interfaces;
 using TaskManagementApp.Models.ProjectTasks;
 
@@ -14,6 +15,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         private readonly Mock<ILogger<CreateProjectTaskService>> _mockLogger;
         private readonly CreateProjectTaskService _createProjectTaskService;
 
+        private readonly User _testAssignedUser;
+
         public CreateProjectTaskServiceTests()
         {
             _mockProjectTaskDomainService = new Mock<IProjectTaskService>();
@@ -23,6 +26,10 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 _mockProjectTaskDomainService.Object,
                 _mockLogger.Object
             );
+
+            _testAssignedUser = new User("Assigned User Test", UserRole.Basic);
+            _testAssignedUser.GetType().GetProperty("Id")?.SetValue(_testAssignedUser, 10);
+            _testAssignedUser.GetType().GetProperty("ExternalId")?.SetValue(_testAssignedUser, Guid.NewGuid());
         }
 
         [Fact(DisplayName = @"DADO uma requisição de criação de uma tarefa
@@ -40,12 +47,15 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 Priority = Models.Enums.ProjectTaskPriority.Medium
             };
 
+            var assignedToUserExternalId = _testAssignedUser.ExternalId;
+
             var projectTask = new ProjectTask(
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority,
-                1
+                (ProjectTaskPriority)request.Priority,
+                1,
+                _testAssignedUser.Id
             );
 
             projectTask.GetType().GetProperty("ExternalId")?.SetValue(projectTask, Guid.NewGuid());
@@ -53,6 +63,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             var project = new Project("Projeto", "Descrição", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
             projectTask.GetType().GetProperty("Project")?.SetValue(projectTask, project);
+            projectTask.GetType().GetProperty("AssignedToUser")?.SetValue(projectTask, _testAssignedUser);
 
             _mockProjectTaskDomainService
                 .Setup(s => s.CreateProjectTaskAsync(
@@ -60,12 +71,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     request.Title,
                     request.Description,
                     request.Deadline,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                    (ProjectTaskPriority)request.Priority,
+                    assignedToUserExternalId
                 ))
                 .ReturnsAsync(projectTask);
 
             // Act
-            var result = await _createProjectTaskService.ExecuteAsync(projectExternalId, request);
+            var result = await _createProjectTaskService.ExecuteAsync(projectExternalId, request, assignedToUserExternalId);
 
             // Assert
             result.Should().NotBeNull();
@@ -76,13 +88,16 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             result.Priority.Should().Be(request.Priority);
             result.Status.Should().Be(Models.Enums.ProjectTaskStatus.Pending);
             result.ProjectId.Should().Be(projectExternalId);
+            result.AssignedToUserId.Should().Be(assignedToUserExternalId);
+            result.AssignedToUserName.Should().Be(_testAssignedUser.Name);
 
             _mockProjectTaskDomainService.Verify(s => s.CreateProjectTaskAsync(
                 projectExternalId,
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                (ProjectTaskPriority)request.Priority,
+                assignedToUserExternalId
             ), Times.Once());
         }
 
@@ -101,6 +116,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 Priority = Models.Enums.ProjectTaskPriority.Low
             };
             var expectedException = new ArgumentException("O título da tarefa não pode ser nulo ou vazio.");
+            var assignedToUserExternalId = _testAssignedUser.ExternalId;
 
             _mockProjectTaskDomainService
                 .Setup(s => s.CreateProjectTaskAsync(
@@ -108,12 +124,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     request.Title,
                     request.Description,
                     request.Deadline,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                    (ProjectTaskPriority)request.Priority,
+                    assignedToUserExternalId
                 ))
                 .ThrowsAsync(expectedException);
 
             // Act & Assert
-            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request);
+            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request, assignedToUserExternalId);
 
             await act.Should().ThrowAsync<ArgumentException>()
                        .WithMessage(expectedException.Message);
@@ -123,7 +140,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                (ProjectTaskPriority)request.Priority,
+                assignedToUserExternalId
             ), Times.Once());
         }
 
@@ -143,6 +161,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             };
 
             var expectedException = new InvalidOperationException("O projeto 'Nome do Projeto' atingiu o limite máximo de 20 tarefas.");
+            var assignedToUserExternalId = _testAssignedUser.ExternalId;
 
             _mockProjectTaskDomainService
                 .Setup(s => s.CreateProjectTaskAsync(
@@ -150,12 +169,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     request.Title,
                     request.Description,
                     request.Deadline,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                    (ProjectTaskPriority)request.Priority,
+                    assignedToUserExternalId
                 ))
                 .ThrowsAsync(expectedException);
 
             // Act & Assert
-            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request);
+            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request, assignedToUserExternalId);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                        .WithMessage(expectedException.Message);
@@ -165,7 +185,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                (ProjectTaskPriority)request.Priority,
+                assignedToUserExternalId
             ), Times.Once());
         }
 
@@ -184,6 +205,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 Priority = Models.Enums.ProjectTaskPriority.Low
             };
             var expectedException = new Exception("Erro inesperado durante a criação da tarefa.");
+            var assignedToUserExternalId = _testAssignedUser.ExternalId;
 
             _mockProjectTaskDomainService
                 .Setup(s => s.CreateProjectTaskAsync(
@@ -191,12 +213,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                     request.Title,
                     request.Description,
                     request.Deadline,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                    (ProjectTaskPriority)request.Priority,
+                    assignedToUserExternalId
                 ))
                 .ThrowsAsync(expectedException);
 
             // Act & Assert
-            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request);
+            Func<Task> act = async () => await _createProjectTaskService.ExecuteAsync(projectExternalId, request, assignedToUserExternalId);
 
             await act.Should().ThrowAsync<Exception>()
                        .WithMessage(expectedException.Message);
@@ -206,7 +229,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 request.Title,
                 request.Description,
                 request.Deadline,
-                (TaskManagementApp.Domain.Enums.ProjectTaskPriority)request.Priority
+                (ProjectTaskPriority)request.Priority,
+                assignedToUserExternalId
             ), Times.Once());
         }
     }

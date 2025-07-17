@@ -18,9 +18,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var deadline = DateTime.Today.AddDays(7);
             var priority = ProjectTaskPriority.Medium;
             var projectId = 1;
+            var userId = 101;
 
             // Act
-            var task = new ProjectTask(title, description, deadline, priority, projectId);
+            var task = new ProjectTask(title, description, deadline, priority, projectId, userId);
 
             // Assert
             task.Should().NotBeNull();
@@ -30,7 +31,31 @@ namespace TaskManagementApp.Tests.Domain.Entities
             task.Priority.Should().Be(priority);
             task.Status.Should().Be(ProjectTaskStatus.Pending);
             task.ProjectId.Should().Be(projectId);
+            task.AssignedToUserId.Should().Be(userId);
             task.ExternalId.Should().NotBe(Guid.Empty);
+            task.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            task.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        }
+
+        [Theory(DisplayName = @"DADO um id de usuário inválido
+                                QUANDO inicializar uma nova task
+                                ENTÃO deve lançar uma ArgumentException")]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void ProjectTask_UserIdInvalido_DeveLancarArgumentException(int invalidUserId)
+        {
+            // Arrange
+            var title = "Título Válido";
+            var description = "Descrição Válida.";
+            var deadline = DateTime.Today.AddDays(7);
+            var priority = ProjectTaskPriority.Medium;
+            var projectId = 1;
+
+            // Act & Assert
+            Action act = () => new ProjectTask(title, description, deadline, priority, projectId, invalidUserId);
+
+            act.Should().Throw<ArgumentException>()
+               .WithMessage("O id do usuário responsável pela tarefa é inválido.*");
         }
 
         [Theory(DisplayName = @"DADO um título inválido
@@ -46,9 +71,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var deadline = DateTime.Today.AddDays(7);
             var priority = ProjectTaskPriority.Medium;
             var projectId = 1;
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new ProjectTask(invalidTitle, description, deadline, priority, projectId);
+            Action act = () => new ProjectTask(invalidTitle, description, deadline, priority, projectId, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("O título da tarefa não pode ser nulo ou vazio.*");
@@ -67,9 +93,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var deadline = DateTime.Today.AddDays(7);
             var priority = ProjectTaskPriority.Medium;
             var projectId = 1;
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new ProjectTask(title, invalidDescription, deadline, priority, projectId);
+            Action act = () => new ProjectTask(title, invalidDescription, deadline, priority, projectId, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("A descrição da tarefa não pode ser nula ou vazia.*");
@@ -86,9 +113,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var deadline = DateTime.Today.AddDays(-1); // Data no passado
             var priority = ProjectTaskPriority.Low;
             var projectId = 1;
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new ProjectTask(title, description, deadline, priority, projectId);
+            Action act = () => new ProjectTask(title, description, deadline, priority, projectId, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("A data de vencimento não pode ser no passado.*");
@@ -106,9 +134,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var description = "Descrição Válida.";
             var deadline = DateTime.Today.AddDays(7);
             var priority = ProjectTaskPriority.Low;
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new ProjectTask(title, description, deadline, priority, invalidProjectId);
+            Action act = () => new ProjectTask(title, description, deadline, priority, invalidProjectId, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("O ID do projeto deve ser válido.*");
@@ -120,7 +149,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDetails_ComDadosValidos_DeveAtualizarPropriedadesCorretamente()
         {
             // Arrange
-            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
             var newTitle = "Novo Título";
             var newDescription = "Nova Descrição";
             var newDeadline = DateTime.Today.AddDays(14);
@@ -145,7 +174,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDetails_ComTituloInvalido_DeveLancarArgumentException(string invalidTitle)
         {
             // Arrange
-            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
             var oldDescription = task.Description;
             var oldDeadline = task.Deadline;
 
@@ -168,7 +197,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDetails_ComDescricaoInvalida_DeveLancarArgumentException(string invalidDescription)
         {
             // Arrange
-            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
             var oldTitle = task.Title;
             var oldDeadline = task.Deadline;
 
@@ -188,7 +217,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDetails_ComDeadlineNoPassado_NaoConcluida_DeveLancarArgumentException()
         {
             // Arrange
-            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
             task.UpdateStatus(ProjectTaskStatus.InProgress);
 
             var newDeadline = DateTime.Today.AddDays(-1);
@@ -206,7 +235,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateStatus_NovoStatusValido_DeveAtualizarStatusCorretamente()
         {
             // Arrange
-            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1);
+            var task = new ProjectTask("Título", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, 1, 1);
             var newStatus = ProjectTaskStatus.Completed;
 
             // Act

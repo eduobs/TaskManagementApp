@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementApp.Application.ProjectTasks;
 using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Enums;
 using TaskManagementApp.Domain.Interfaces;
 using TaskManagementApp.Models.ProjectTasks;
 
@@ -13,6 +14,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         private readonly Mock<IProjectTaskService> _mockProjectTaskDomainService;
         private readonly Mock<ILogger<UpdateProjectTaskStatusService>> _mockLogger;
         private readonly UpdateProjectTaskStatusService _updateProjectTaskStatusService;
+        private readonly User _testModifyingUser;
 
         public UpdateProjectTaskStatusServiceTests()
         {
@@ -23,6 +25,10 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 _mockProjectTaskDomainService.Object,
                 _mockLogger.Object
             );
+            
+            _testModifyingUser = new User("Usuário Teste", UserRole.Basic);
+            _testModifyingUser.GetType().GetProperty("Id")?.SetValue(_testModifyingUser, 20);
+            _testModifyingUser.GetType().GetProperty("ExternalId")?.SetValue(_testModifyingUser, Guid.NewGuid());
         }
 
         [Fact(DisplayName = @"DADO uma requisição dados válidos
@@ -34,7 +40,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             var taskExternalId = Guid.NewGuid();
             var projectIdOriginal = Guid.NewGuid();
             var projectIdInterno = 1;
-            var userId = Guid.NewGuid();
+            var assignedToUserIdInterno = 10;
+            var modifiedByUserId = _testModifyingUser.ExternalId;
 
             var request = new UpdateProjectTaskStatusRequest
             {
@@ -45,33 +52,34 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 "Título Original",
                 "Descrição Original",
                 DateTime.Today.AddDays(5),
-                TaskManagementApp.Domain.Enums.ProjectTaskPriority.Low,
-                projectIdInterno
+                ProjectTaskPriority.Low,
+                projectIdInterno,
+                assignedToUserIdInterno
             );
             task.GetType().GetProperty("ExternalId")?.SetValue(task, taskExternalId);
             var parentProject = new Project("Projeto Original", "Descrição", 1);
             parentProject.GetType().GetProperty("ExternalId")?.SetValue(parentProject, projectIdOriginal);
             task.GetType().GetProperty("Project")?.SetValue(task, parentProject);
-
-            task.UpdateStatus(TaskManagementApp.Domain.Enums.ProjectTaskStatus.InProgress);
+            task.UpdateStatus(ProjectTaskStatus.InProgress);
 
             var updatedTask = new ProjectTask(
                 task.Title,
                 task.Description,
                 task.Deadline,
                 task.Priority,
-                projectIdInterno
+                projectIdInterno,
+                assignedToUserIdInterno
             );
             updatedTask.GetType().GetProperty("ExternalId")?.SetValue(updatedTask, taskExternalId);
             updatedTask.GetType().GetProperty("Project")?.SetValue(updatedTask, parentProject);
-
-            updatedTask.UpdateStatus(TaskManagementApp.Domain.Enums.ProjectTaskStatus.Completed);
+            updatedTask.GetType().GetProperty("AssignedToUser")?.SetValue(updatedTask, _testModifyingUser);            
+            updatedTask.UpdateStatus(ProjectTaskStatus.Completed);
 
             _mockProjectTaskDomainService
                 .Setup(s => s.UpdateProjectTaskStatusAsync(
                     taskExternalId,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status,
-                    userId
+                    (ProjectTaskStatus)request.Status,
+                    modifiedByUserId
                 ))
                 .ReturnsAsync(true);
 
@@ -80,7 +88,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 .ReturnsAsync(updatedTask);
 
             // Act
-            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, userId);
+            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, modifiedByUserId);
 
             // Assert
             result.Should().NotBeNull();
@@ -91,11 +99,13 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             result.Deadline.Should().Be(updatedTask.Deadline);
             result.Priority.Should().Be((Models.Enums.ProjectTaskPriority)updatedTask.Priority);
             result.ProjectId.Should().Be(projectIdOriginal);
+            result.AssignedToUserId.Should().Be(_testModifyingUser.ExternalId);
+            result.AssignedToUserName.Should().Be(_testModifyingUser.Name);
 
             _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
                 taskExternalId,
-                (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status,
-                userId
+                (ProjectTaskStatus)request.Status,
+                modifiedByUserId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(taskExternalId), Times.Once());
@@ -108,7 +118,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var modifiedByUserId = _testModifyingUser.ExternalId;
             var request = new UpdateProjectTaskStatusRequest
             {
                 Status = Models.Enums.ProjectTaskStatus.Completed
@@ -117,21 +127,21 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             _mockProjectTaskDomainService
                 .Setup(s => s.UpdateProjectTaskStatusAsync(
                     taskExternalId,
-                    It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>(),
-                    userId
+                    It.IsAny<ProjectTaskStatus>(),
+                    modifiedByUserId
                 ))
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, userId);
+            var result = await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, modifiedByUserId);
 
             // Assert
             result.Should().BeNull();
 
             _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
                 taskExternalId,
-                It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>(),
-                userId
+                It.IsAny<ProjectTaskStatus>(),
+                modifiedByUserId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
@@ -144,7 +154,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var modifiedByUserId = _testModifyingUser.ExternalId;
             var request = new UpdateProjectTaskStatusRequest
             {
                 Status = (Models.Enums.ProjectTaskStatus)999
@@ -154,20 +164,20 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             _mockProjectTaskDomainService
                 .Setup(s => s.UpdateProjectTaskStatusAsync(
                     taskExternalId,
-                    (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status,
-                    userId
+                    (ProjectTaskStatus)request.Status,
+                    modifiedByUserId
                 ))
                 .ThrowsAsync(exception);
 
             // Act & Assert
-            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, userId);
+            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, modifiedByUserId);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage(exception.Message);
 
             _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
                 taskExternalId,
-                (TaskManagementApp.Domain.Enums.ProjectTaskStatus)request.Status,
-                userId
+                (ProjectTaskStatus)request.Status,
+                modifiedByUserId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());
@@ -180,7 +190,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
         {
             // Arrange
             var taskExternalId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var modifiedByUserId = _testModifyingUser.ExternalId;
             var request = new UpdateProjectTaskStatusRequest
             {
                 Status = Models.Enums.ProjectTaskStatus.Completed
@@ -191,20 +201,20 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             _mockProjectTaskDomainService
                 .Setup(s => s.UpdateProjectTaskStatusAsync(
                     taskExternalId,
-                    It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>(),
-                    userId
+                    It.IsAny<ProjectTaskStatus>(),
+                    modifiedByUserId
                 ))
                 .ThrowsAsync(exception);
 
             // Act & Assert
-            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, userId);
+            Func<Task> act = async () => await _updateProjectTaskStatusService.ExecuteAsync(taskExternalId, request, modifiedByUserId);
 
             await act.Should().ThrowAsync<Exception>().WithMessage(exception.Message);
 
             _mockProjectTaskDomainService.Verify(s => s.UpdateProjectTaskStatusAsync(
                 taskExternalId,
-                It.IsAny<TaskManagementApp.Domain.Enums.ProjectTaskStatus>(),
-                userId
+                It.IsAny<ProjectTaskStatus>(),
+                modifiedByUserId
             ), Times.Once());
 
             _mockProjectTaskDomainService.Verify(s => s.GetProjectTaskByExternalIdAsync(It.IsAny<Guid>()), Times.Never());

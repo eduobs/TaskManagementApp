@@ -46,7 +46,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 "Título", "Descrição",
                 DateTime.Today.AddDays(5),
                 TaskManagementApp.Domain.Enums.ProjectTaskPriority.Low,
-                projectIdInterno
+                projectIdInterno,
+                1
             );
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
 
@@ -59,7 +60,8 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 request.Description,
                 request.Deadline,
                 TaskManagementApp.Domain.Enums.ProjectTaskPriority.Low,
-                projectIdInterno
+                projectIdInterno,
+                1
             );
             task.GetType().GetProperty("ExternalId")?.SetValue(task, taskExternalId);
             task.GetType().GetProperty("Project")?.SetValue(task, project);
