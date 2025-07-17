@@ -50,7 +50,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
 
             projectTask.GetType().GetProperty("ExternalId")?.SetValue(projectTask, Guid.NewGuid());
 
-            var project = new Project("Projeto", "Descrição");
+            var project = new Project("Projeto", "Descrição", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
             projectTask.GetType().GetProperty("Project")?.SetValue(projectTask, project);
 

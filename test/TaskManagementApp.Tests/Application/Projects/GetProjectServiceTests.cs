@@ -27,7 +27,7 @@ namespace TaskManagementApp.Tests.Application.Projects
         {
             // Arrange
             var externalId = Guid.NewGuid();
-            var project = new Project("Nome", "Descrição");
+            var project = new Project("Nome", "Descrição", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, externalId);
 
             _mockProjectService

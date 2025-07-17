@@ -34,7 +34,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             var projectExternalId = Guid.NewGuid();
             var projectIdInterno = 1;
 
-            var project = new Project("Projeto Teste", "Descrição");
+            var project = new Project("Projeto Teste", "Descrição", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
             project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
 

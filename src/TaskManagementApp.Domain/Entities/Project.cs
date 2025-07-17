@@ -4,7 +4,7 @@ namespace TaskManagementApp.Domain.Entities
     {
         private Project() { }
 
-        public Project(string name, string description)
+        public Project(string name, string description, int createdByUserId)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("O nome do projeto não pode ser nulo ou vazio.", nameof(name));
@@ -12,9 +12,15 @@ namespace TaskManagementApp.Domain.Entities
             if (string.IsNullOrWhiteSpace(description))
                 throw new ArgumentException("A descrição do projeto não pode ser nula ou vazia.", nameof(description));
 
+            if (createdByUserId <= 0)
+                throw new ArgumentException("O id do usuário criador é inválido.", nameof(createdByUserId));
+
             ExternalId = Guid.NewGuid();
             Name = name;
             Description = description;
+            CreatedByUserId = createdByUserId;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public int Id { get; private set; }
@@ -27,12 +33,21 @@ namespace TaskManagementApp.Domain.Entities
 
         public ICollection<ProjectTask> Tasks { get; private set; } = [];
 
+        public int CreatedByUserId { get; private set; }
+
+        public User CreatedByUser { get; private set; } = null!;
+
+        public DateTime CreatedAt { get; private set; }
+
+        public DateTime UpdatedAt { get; private set; }
+
         public void UpdateName(string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
                 throw new ArgumentException("O nome do projeto não pode ser nulo ou vazio.", nameof(newName));
 
             Name = newName;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public void UpdateDescription(string newDescription)
@@ -41,6 +56,7 @@ namespace TaskManagementApp.Domain.Entities
                 throw new ArgumentException("A descrição do projeto não pode ser nula ou vazia.", nameof(newDescription));
 
             Description = newDescription;
+            UpdatedAt = DateTime.UtcNow;
         }
         
         public void AddTask(ProjectTask task)

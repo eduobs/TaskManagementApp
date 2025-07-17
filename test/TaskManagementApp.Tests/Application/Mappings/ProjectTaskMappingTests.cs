@@ -14,7 +14,7 @@ namespace TaskManagementApp.Tests.Application.Mappings
             // Arrange
             var taskExternalId = Guid.NewGuid();
             var projectIdOriginal = Guid.NewGuid();
-            var project = new Project("Projeto Pai", "Descrição do Projeto Pai");
+            var project = new Project("Projeto Pai", "Descrição do Projeto Pai", 1);
 
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectIdOriginal);
 

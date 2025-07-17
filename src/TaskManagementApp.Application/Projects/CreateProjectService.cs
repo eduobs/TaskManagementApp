@@ -17,14 +17,19 @@ namespace TaskManagementApp.Application.Projects
             _projectService = projectService;
         }
 
-        public async Task<ProjectResponse> ExecuteAsync(CreateProjectRequest request)
+        public async Task<ProjectResponse> ExecuteAsync(CreateProjectRequest request, Guid userId)
         {
             _logger.LogInformation(
                 "Recebida requisição para criar projeto: {ProjectName}",
                 request.Name
             );
 
-            var project = await _projectService.CreateProjectAsync(request.Name, request.Description);
+            var project = await _projectService.CreateProjectAsync(
+                request.Name,
+                request.Description,
+                userId
+            );
+
             var response = project.ToDto();
 
             _logger.LogInformation(

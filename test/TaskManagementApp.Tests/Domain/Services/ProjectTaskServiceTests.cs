@@ -40,7 +40,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             var projectName = "Projeto 1";
             var projectDescription = "Descrição do projeto.";
 
-            var project = new Project(projectName, projectDescription);
+            var project = new Project(projectName, projectDescription, 1);
 
             project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
@@ -120,7 +120,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             var projectExternalId = Guid.NewGuid();
             var projectIdInterno = 2;
             var projectName = "Projeto Cheio";
-            var project = new Project(projectName, "Descrição");
+            var project = new Project(projectName, "Descrição", 1);
 
             project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);

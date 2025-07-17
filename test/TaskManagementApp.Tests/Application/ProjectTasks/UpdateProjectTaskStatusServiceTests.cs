@@ -48,7 +48,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
                 projectIdInterno
             );
             task.GetType().GetProperty("ExternalId")?.SetValue(task, taskExternalId);
-            var parentProject = new Project("Projeto Original", "Descrição");
+            var parentProject = new Project("Projeto Original", "Descrição", 1);
             parentProject.GetType().GetProperty("ExternalId")?.SetValue(parentProject, projectIdOriginal);
             task.GetType().GetProperty("Project")?.SetValue(task, parentProject);
 

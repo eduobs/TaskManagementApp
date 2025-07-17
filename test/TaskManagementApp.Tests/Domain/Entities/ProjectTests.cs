@@ -13,15 +13,34 @@ namespace TaskManagementApp.Tests.Domain.Entities
             // Arrange
             var name = "Novo Projeto";
             var description = "Descrição do meu projeto de teste.";
+            var userId = 1;
 
             // Act
-            var project = new Project(name, description);
+            var project = new Project(name, description, userId);
 
             // Assert
             project.Should().NotBeNull();
             project.Name.Should().Be(name);
             project.Description.Should().Be(description);
             project.ExternalId.Should().NotBe(Guid.Empty);
+        }
+
+        [Theory(DisplayName = @"DADO um id de usuário inválido
+                                QUANDO inicializar um novo projeto
+                                ENTÃO deve lançar uma ArgumentException")]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void Project_ConstrutorComUserIdInvalido_DeveLancarException(int invalidUserId)
+        {
+            // Arrange
+            var name = "Nome Válido";
+            var description = "Descrição Válida.";
+
+            // Act & Assert
+            Action act = () => new Project(name, description, invalidUserId);
+
+            act.Should().Throw<ArgumentException>()
+               .WithMessage("O ID do usuário criador é inválido.*");
         }
 
         [Theory(DisplayName = @"DADO um nome inválido
@@ -34,9 +53,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
         {
             // Arrange
             var description = "Qualquer descrição.";
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new Project(invalidName, description);
+            Action act = () => new Project(invalidName, description, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("O nome do projeto não pode ser nulo ou vazio.*");
@@ -52,9 +72,10 @@ namespace TaskManagementApp.Tests.Domain.Entities
         {
             // Arrange
             var name = "Nome Válido";
+            var userId = 1;
 
             // Act & Assert
-            Action act = () => new Project(name, invalidDescription);
+            Action act = () => new Project(name, invalidDescription, userId);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("A descrição do projeto não pode ser nula ou vazia.*");
@@ -66,7 +87,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateName_QuandoDadosValidos_DeveAtualizarOsDadosCorretamente()
         {
             // Arrange
-            var project = new Project("Old Name", "Old Description");
+            var project = new Project("Old Name", "Old Description", 1);
             var newName = "Novo Nome do Projeto";
 
             // Act
@@ -85,7 +106,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateName_QuandoNomeInvalido_DeveRetornarException(string invalidName)
         {
             // Arrange
-            var project = new Project("Existing Name", "Existing Description");
+            var project = new Project("Existing Name", "Existing Description", 1);
 
             // Act & Assert
             Action act = () => project.UpdateName(invalidName);
@@ -100,7 +121,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDescription_QuandoDadosValidos_DeveAtualizarOsDadosCorretamente()
         {
             // Arrange
-            var project = new Project("Project Name", "Old Description");
+            var project = new Project("Project Name", "Old Description", 1);
             var newDescription = "Nova Descrição do Projeto.";
 
             // Act
@@ -119,7 +140,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
         public void UpdateDescription_QuandoDescricaoInvalida_DeveRetornarException(string invalidDescription)
         {
             // Arrange
-            var project = new Project("Existing Name", "Existing Description");
+            var project = new Project("Existing Name", "Existing Description", 1);
 
             // Act & Assert
             Action act = () => project.UpdateDescription(invalidDescription);

@@ -46,6 +46,13 @@ namespace TaskManagementApp.Data.Configurations
                    .HasForeignKey(pt => pt.ProjectId)
                    .IsRequired()
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(pt => pt.CreatedAt)
+                    .IsRequired();
+
+            builder.Property(pt => pt.UpdatedAt)
+                   .IsRequired();
+
         }
     }
 }

@@ -11,23 +11,43 @@ namespace TaskManagementApp.Data.Configurations
             builder.ToTable("Projects");
 
             builder.HasKey(p => p.Id);
-            
+
             builder.Property(p => p.Id)
-                    .ValueGeneratedOnAdd();
+                     .ValueGeneratedOnAdd();
 
             builder.Property(p => p.ExternalId)
-                    .IsRequired();
-                    
+                     .IsRequired();
+
             builder.HasIndex(p => p.ExternalId)
-                    .IsUnique();
+                     .IsUnique();
 
             builder.Property(p => p.Name)
-                    .HasMaxLength(255)
-                    .IsRequired();
+                     .HasMaxLength(255)
+                     .IsRequired();
 
             builder.Property(p => p.Description)
-                    .HasMaxLength(1000)
-                       .IsRequired();
+                     .HasMaxLength(1000)
+                              .IsRequired();
+
+            builder.Property(p => p.CreatedByUserId)
+               .IsRequired();
+
+            builder.HasOne(p => p.CreatedByUser)
+                     .WithMany()
+                     .HasForeignKey(p => p.CreatedByUserId)
+                     .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(p => p.CreatedAt)
+                     .IsRequired();
+
+            builder.Property(p => p.UpdatedAt)
+                     .IsRequired();
+
+            builder.HasMany(p => p.Tasks)
+                     .WithOne(pt => pt.Project)
+                     .HasForeignKey(pt => pt.ProjectId)
+                     .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }

@@ -13,6 +13,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         private readonly Mock<ILogger<ProjectService>> _mockLogger;
         private readonly Mock<IProjectRepository> _mockProjectRepository;
         private readonly Mock<IProjectTaskRepository> _mockProjectTaskRepository;
+        private readonly Mock<IUserRepository> _mockUserRepository;
         private readonly ProjectService _projectService;
 
         public ProjectServiceTests()
@@ -20,11 +21,14 @@ namespace TaskManagementApp.Tests.Domain.Services
             _mockLogger = new Mock<ILogger<ProjectService>>();
             _mockProjectRepository = new Mock<IProjectRepository>();
             _mockProjectTaskRepository = new Mock<IProjectTaskRepository>();
+            _mockUserRepository = new Mock<IUserRepository>();
+
 
             _projectService = new ProjectService(
                 _mockLogger.Object,
                 _mockProjectRepository.Object,
-                _mockProjectTaskRepository.Object
+                _mockProjectTaskRepository.Object,
+                _mockUserRepository.Object
             );
         }
 
@@ -36,6 +40,12 @@ namespace TaskManagementApp.Tests.Domain.Services
             // Arrange
             var projectName = "Novo Projeto de Teste";
             var projectDescription = "Descrição para o novo projeto de teste.";
+            var userId = Guid.NewGuid();
+            var user = new User("Usuário 1", UserRole.Manager);
+            user.GetType().GetProperty("ExternalId")?.SetValue(user, userId);
+            user.GetType().GetProperty("Id")?.SetValue(user, 1);
+
+            var project = new Project(projectName, projectDescription, 1);
 
             _mockProjectRepository
                 .Setup(r => r.AddAsync(It.IsAny<Project>()))
@@ -45,8 +55,12 @@ namespace TaskManagementApp.Tests.Domain.Services
                 .Setup(r => r.SaveChangesAsync())
                 .ReturnsAsync(1);
 
+            _mockUserRepository
+                .Setup(r => r.GetByExternalIdAsync(userId))
+                .ReturnsAsync(user);
+
             // Act
-            var createdProject = await _projectService.CreateProjectAsync(projectName, projectDescription);
+            var createdProject = await _projectService.CreateProjectAsync(projectName, projectDescription, userId);
 
             // Assert
             createdProject.Should().NotBeNull();
@@ -56,6 +70,7 @@ namespace TaskManagementApp.Tests.Domain.Services
 
             _mockProjectRepository.Verify(r => r.AddAsync(It.IsAny<Project>()), Times.Once());
             _mockProjectRepository.Verify(r => r.SaveChangesAsync(), Times.Once());
+            _mockUserRepository.Verify(r => r.GetByExternalIdAsync(userId), Times.Once());
         }
 
         [Fact(DisplayName = @"DADO um Id válido
@@ -65,7 +80,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var externalId = Guid.NewGuid();
-            var project = new Project("Teste", "Descrição Teste");
+            var project = new Project("Teste", "Descrição Teste", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, externalId);
 
             _mockProjectRepository
@@ -106,8 +121,8 @@ namespace TaskManagementApp.Tests.Domain.Services
             // Arrange
             var projects = new List<Project>
             {
-                new("Projeto 1", "Descrição 1"),
-                new("Projeto 2", "Descrição 2")
+                new("Projeto 1", "Descrição 1", 1),
+                new("Projeto 2", "Descrição 2", 1)
             };
 
             _mockProjectRepository
@@ -129,7 +144,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var externalId = Guid.NewGuid();
-            var existingProject = new Project("Nome", "Descrição");
+            var existingProject = new Project("Nome", "Descrição", 1);
             existingProject.GetType().GetProperty("ExternalId")?.SetValue(existingProject, externalId);
 
             var newName = "Novo nome";
@@ -181,7 +196,7 @@ namespace TaskManagementApp.Tests.Domain.Services
         {
             // Arrange
             var externalId = Guid.NewGuid();
-            var existingProject = new Project("Projeto para deletar", "Descrição do projeto");
+            var existingProject = new Project("Projeto para deletar", "Descrição do projeto", 1);
             existingProject.GetType().GetProperty("ExternalId")?.SetValue(existingProject, externalId);
 
             _mockProjectRepository
@@ -230,7 +245,7 @@ namespace TaskManagementApp.Tests.Domain.Services
             var projectExternalId = Guid.NewGuid();
             var projectIdInterno = 1;
             var projectName = "Projeto";
-            var project = new Project(projectName, "Descrição");
+            var project = new Project(projectName, "Descrição", 1);
             project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
 

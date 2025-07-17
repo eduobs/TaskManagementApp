@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementApp.Application.Projects;
 using TaskManagementApp.Application.ProjectTasks;
+using TaskManagementApp.Models.Errors;
 using TaskManagementApp.Models.Projects;
 using TaskManagementApp.Models.ProjectTasks;
 
@@ -41,9 +42,12 @@ namespace TaskManagementApp.Api.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ProjectResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
+        public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request, [FromHeader(Name = "X-User-Id")] Guid xUserId)
         {
-            var response = await _projectService.ExecuteAsync(request);
+            if (xUserId.Equals(Guid.Empty))
+                return BadRequest(new ErrorResponse("INVALID_ARGUMENT", "O cabeçalho 'X-User-Id' é obrigatório e deve ser um GUID válido."));
+
+            var response = await _projectService.ExecuteAsync(request, xUserId);
             return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
         }
 

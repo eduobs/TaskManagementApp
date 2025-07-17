@@ -28,6 +28,8 @@ namespace TaskManagementApp.Domain.Entities
             Priority = priority;
             Status = ProjectTaskStatus.Pending;
             ProjectId = projectId;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public int Id { get; private set; }
@@ -48,6 +50,10 @@ namespace TaskManagementApp.Domain.Entities
 
         public Project Project { get; private set; } = null!;
 
+        public DateTime CreatedAt { get; private set; }
+
+        public DateTime UpdatedAt { get; private set; }
+
         public void UpdateDetails(string title, string description, DateTime deadline)
         {
             if (string.IsNullOrWhiteSpace(title))
@@ -62,8 +68,14 @@ namespace TaskManagementApp.Domain.Entities
             Title = title;
             Description = description;
             Deadline = deadline;
+            UpdatedAt = DateTime.UtcNow;
         }
 
-        public void UpdateStatus(ProjectTaskStatus status) => Status = status;
+        public void UpdateStatus(ProjectTaskStatus status)
+        {
+            Status = status;
+            UpdatedAt = DateTime.UtcNow;
+        
+        }
     }
 }

@@ -10,24 +10,46 @@ namespace TaskManagementApp.Domain.Services
         private readonly ILogger<ProjectService> _logger;
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectTaskRepository _projectTaskRepository;
-
+        private readonly IUserRepository _userRepository;
 
         public ProjectService(
             ILogger<ProjectService> logger,
             IProjectRepository projectRepository,
-            IProjectTaskRepository projectTaskRepository)
+            IProjectTaskRepository projectTaskRepository,
+            IUserRepository userRepository)
         {
             _logger = logger;
             _projectRepository = projectRepository;
             _projectTaskRepository = projectTaskRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<Project> CreateProjectAsync(string name, string description)
+        public async Task<Project> CreateProjectAsync(string name, string description, Guid createdByUserExternalId)
         {
-            var project = new Project(name, description);
+            _logger.LogInformation(
+                "Iniciando criação do projeto '{ProjectName}' pelo usuário {CreatedByUserExternalId}.",
+                name,
+                createdByUserExternalId
+            );
+
+            var creatingUser = await _userRepository.GetByExternalIdAsync(createdByUserExternalId);
+            if (creatingUser == null)
+            {
+                _logger.LogWarning("Usuário criador {CreatedByUserExternalId} não encontrado.", createdByUserExternalId);
+                throw new ArgumentException($"Usuário criador com id {createdByUserExternalId} não encontrado.");
+            }
+
+            var project = new Project(name, description, creatingUser.Id);
 
             await _projectRepository.AddAsync(project);
             await _projectRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Projeto '{ProjectName}' (Id: {ProjectId}) criado com sucesso pelo usuário {CreatedByUserExternalId}.",
+                project.Name,
+                project.ExternalId,
+                createdByUserExternalId
+            );
 
             return project;
         }

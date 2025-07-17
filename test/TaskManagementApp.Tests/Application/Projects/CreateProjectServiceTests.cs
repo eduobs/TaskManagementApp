@@ -32,18 +32,19 @@ namespace TaskManagementApp.Tests.Application.Projects
                 Name = "Projeto de Teste",
                 Description = "Descrição do projeto de teste na camada de aplicação."
             };
+            var userId = Guid.NewGuid();
 
             var expectedExternalId = Guid.NewGuid();
-            var domainProject = new Project(request.Name, request.Description);
+            var project = new Project(request.Name, request.Description, 1);
 
-            domainProject.GetType().GetProperty("ExternalId")?.SetValue(domainProject, expectedExternalId);
+            project.GetType().GetProperty("ExternalId")?.SetValue(project, expectedExternalId);
 
             _mockProjectService
-                .Setup(s => s.CreateProjectAsync(request.Name, request.Description))
-                .ReturnsAsync(domainProject);
+                .Setup(s => s.CreateProjectAsync(request.Name, request.Description, userId))
+                .ReturnsAsync(project);
 
             // Act
-            var result = await _createProjectService.ExecuteAsync(request);
+            var result = await _createProjectService.ExecuteAsync(request, userId);
 
             // Assert
             result.Should().NotBeNull();
@@ -51,7 +52,7 @@ namespace TaskManagementApp.Tests.Application.Projects
             result.Name.Should().Be(request.Name);
             result.Description.Should().Be(request.Description);
 
-            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description), Times.Once());
+            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description, userId), Times.Once());
         }
 
         [Fact(DisplayName = @"DADO uma requisição de criação de projeto inválida
@@ -65,18 +66,19 @@ namespace TaskManagementApp.Tests.Application.Projects
                 Name = "",
                 Description = "Descrição válida."
             };
+            var userId = Guid.NewGuid();
 
             _mockProjectService
-                .Setup(s => s.CreateProjectAsync(request.Name, request.Description))
+                .Setup(s => s.CreateProjectAsync(request.Name, request.Description, userId))
                 .ThrowsAsync(new ArgumentException("O nome do projeto não pode ser nulo ou vazio.", nameof(request.Name)));
 
             // Act & Assert
-            Func<Task> act = async () => await _createProjectService.ExecuteAsync(request);
+            Func<Task> act = async () => await _createProjectService.ExecuteAsync(request, userId);
 
             await act.Should().ThrowAsync<ArgumentException>()
                        .WithMessage("O nome do projeto não pode ser nulo ou vazio.*");
 
-            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description), Times.Once());
+            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description, userId), Times.Once());
         }
 
         [Fact(DisplayName = @"DADO uma requisição de criação de projeto
@@ -90,18 +92,19 @@ namespace TaskManagementApp.Tests.Application.Projects
                 Name = "Projeto X",
                 Description = "Descrição Y"
             };
+            var userId = Guid.NewGuid();
 
             _mockProjectService
-                .Setup(s => s.CreateProjectAsync(request.Name, request.Description))
+                .Setup(s => s.CreateProjectAsync(request.Name, request.Description, userId))
                 .ThrowsAsync(new InvalidOperationException("Erro inesperado."));
 
             // Act & Assert
-            Func<Task> act = async () => await _createProjectService.ExecuteAsync(request);
+            Func<Task> act = async () => await _createProjectService.ExecuteAsync(request, userId);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                        .WithMessage("Erro inesperado.");
 
-            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description), Times.Once());
+            _mockProjectService.Verify(s => s.CreateProjectAsync(request.Name, request.Description, userId), Times.Once());
         }
     }
 }

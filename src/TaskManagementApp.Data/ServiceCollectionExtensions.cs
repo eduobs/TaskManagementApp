@@ -26,6 +26,7 @@ namespace TaskManagementApp.Data
 
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<IProjectTaskRepository, ProjectTaskRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
 
             return services;
         }

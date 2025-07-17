@@ -49,7 +49,7 @@ namespace TaskManagementApp.Tests.Application.ProjectTasks
             );
             existingTask.GetType().GetProperty("ExternalId")?.SetValue(existingTask, taskExternalId);
 
-            var project = new Project("Projeto Original", "Descrição");
+            var project = new Project("Projeto Original", "Descrição", 1);
             project.GetType().GetProperty("ExternalId")?.SetValue(project, projectIdOriginal);
             existingTask.GetType().GetProperty("Project")?.SetValue(existingTask, project);
 

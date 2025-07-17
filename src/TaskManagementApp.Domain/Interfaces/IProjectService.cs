@@ -9,8 +9,9 @@ namespace TaskManagementApp.Domain.Interfaces
         /// </summary>
         /// <param name="name">Nome do projeto</param>
         /// <param name="description">Descrição do projeto</param>
+        /// <param name="createdByUserExternalId">Id externo do usuário criador do projeto</param>
         /// <returns>Retorna o projeto criado</returns>
-        Task<Project> CreateProjectAsync(string name, string description);
+        Task<Project> CreateProjectAsync(string name, string description, Guid createdByUserExternalId);
 
         /// <summary>
         /// Serviço para obter um projeto pelo seu ExternalId (Guid).

@@ -29,8 +29,8 @@ namespace TaskManagementApp.Tests.Application.Projects
             // Arrange
             var projects = new List<Project>
             {
-                new("Projeto A", "Descrição A"),
-                new("Projeto B", "Descrição B")
+                new("Projeto A", "Descrição A", 1),
+                new("Projeto B", "Descrição B", 1)
             };
 
             projects[0].GetType().GetProperty("ExternalId")?.SetValue(projects[0], Guid.NewGuid());
