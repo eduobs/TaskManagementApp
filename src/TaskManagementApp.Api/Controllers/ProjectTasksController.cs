@@ -11,15 +11,18 @@ namespace TaskManagementApp.Api.Controllers
         private readonly IUpdateProjectTaskService _updateProjectTaskService;
         private readonly IUpdateProjectTaskStatusService _updateProjectTaskStatusService;
         private readonly IDeleteProjectTaskService _deleteProjectTaskService;
+        private readonly IAddCommentToTaskService _addCommentToTaskService;
 
         public ProjectTasksController(
             IUpdateProjectTaskService updateProjectTaskService,
             IUpdateProjectTaskStatusService updateProjectTaskStatusService,
-            IDeleteProjectTaskService deleteProjectTaskService)
+            IDeleteProjectTaskService deleteProjectTaskService,
+            IAddCommentToTaskService addCommentToTaskService)
         {
             _updateProjectTaskService = updateProjectTaskService;
             _updateProjectTaskStatusService = updateProjectTaskStatusService;
             _deleteProjectTaskService = deleteProjectTaskService;
+            _addCommentToTaskService = addCommentToTaskService;
         }
 
         /// <summary>
@@ -87,6 +90,33 @@ namespace TaskManagementApp.Api.Controllers
         public async Task<IActionResult> DeleteProjectTask([FromRoute] Guid taskId)
         {
             var success = await _deleteProjectTaskService.ExecuteAsync(taskId);
+
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Adiciona um comentário a uma tarefa específica.
+        /// </summary>
+        /// <param name="taskId">Id externo (GUID) da tarefa para a qual o comentário será adicionado.</param>
+        /// <param name="request">Dados do comentário.</param>
+        /// <param name="xUserId">Id externo (GUID) do usuário que está adicionando o comentário.</param>
+        /// <returns>No Content se o comentário for adicionado com sucesso, ou Not Found se a tarefa não existir.</returns>
+        [HttpPost("{taskId}/comments")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AddCommentToTask(
+            [FromRoute] Guid taskId,
+            [FromBody] AddCommentToTaskRequest request,
+            [FromHeader(Name = "X-User-Id")] Guid xUserId)
+        {
+            if (xUserId == Guid.Empty)
+                return BadRequest(new { message = "O cabeçalho 'X-User-Id' é obrigatório e deve ser um GUID válido." });
+
+            var success = await _addCommentToTaskService.ExecuteAsync(taskId, request, xUserId);
 
             if (!success)
                 return NotFound();
