@@ -17,5 +17,7 @@ namespace TaskManagementApp.Data.Repositories
         public async Task<User?> GetByExternalIdAsync(Guid id) => await _context.Users.FirstOrDefaultAsync(u => u.ExternalId.Equals(id));
 
         public async Task<User?> GetByIdAsync(int id) => await _context.Users.FirstOrDefaultAsync(u => u.Id.Equals(id));
+
+        public async Task<IEnumerable<User>> GetAllAsync() => await _context.Users.ToListAsync();
     }
 }

@@ -17,5 +17,11 @@ namespace TaskManagementApp.Domain.Interfaces
         /// <param name="id">Id interno do banco de dados.</param>
         /// <returns>Usuário quando localizar na base.</returns>
         Task<User?> GetByIdAsync(int id);
+
+        /// <summary>
+        /// Consulta usuários do repositório.
+        /// </summary>
+        /// <returns>Lista de usuários.</returns>
+        Task<IEnumerable<User>> GetAllAsync();
     }
 }

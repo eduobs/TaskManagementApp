@@ -159,6 +159,12 @@ namespace TaskManagementApp.Domain.Services
             return true;
         }
 
+        public async Task<IEnumerable<ProjectTask>> GetAllAsync()
+        {
+            _logger.LogInformation("Buscando todas as tarefas.");
+            return await _projectTaskRepository.GetAllAsync();
+        }
+
         private async Task AddHistoryEntryForDetailsUpdate(int projectTaskId, string oldTitle, string newTitle, string oldDescription, string newDescription, DateTime oldDeadline, DateTime newDeadline, Guid modifiedByUserId)
         {
             var historyEntriesToAdd = new List<ProjectTaskHistory>();

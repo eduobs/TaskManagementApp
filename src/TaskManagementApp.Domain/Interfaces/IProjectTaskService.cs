@@ -57,5 +57,11 @@ namespace TaskManagementApp.Domain.Interfaces
         /// <param name="taskExternalId">Identificação da tarefa a ser removida</param>
         /// <returns>Booleano para confirmar se a tarefa foi removida</returns>
         Task<bool> DeleteProjectTaskAsync(Guid taskExternalId);
+
+        /// <summary>
+        /// Serviço para obter todas as tarefas.
+        /// </summary>
+        /// <returns>Retorna lista de tarefas</returns>
+        Task<IEnumerable<ProjectTask>> GetAllAsync();
     }
 }
