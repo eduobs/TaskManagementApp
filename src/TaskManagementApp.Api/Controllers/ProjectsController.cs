@@ -15,19 +15,22 @@ namespace TaskManagementApp.Api.Controllers
         private readonly IGetAllProjectsService _getAllProjectsService;
         private readonly ICreateProjectTaskService _createProjectTaskService;
         private readonly IGetProjectTasksByProjectIdService _getProjectTasksByProjectIdService;
+        private readonly IDeleteProjectService _deleteProjectService;
 
 
         public ProjectsController(ICreateProjectService projectService,
             IGetProjectService getProjectService,
             IGetAllProjectsService getAllProjectsService,
             ICreateProjectTaskService createProjectTaskService,
-            IGetProjectTasksByProjectIdService getProjectTasksByProjectIdService)
+            IGetProjectTasksByProjectIdService getProjectTasksByProjectIdService,
+            IDeleteProjectService deleteProjectService)
         {
             _projectService = projectService;
             _getProjectService = getProjectService;
             _getAllProjectsService = getAllProjectsService;
             _createProjectTaskService = createProjectTaskService;
             _getProjectTasksByProjectIdService = getProjectTasksByProjectIdService;
+            _deleteProjectService = deleteProjectService;
         }
 
         /// <summary>
@@ -106,13 +109,32 @@ namespace TaskManagementApp.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProjectTasksByProjectId([FromRoute] Guid projectId)
-        { 
+        {
             var projectTasks = await _getProjectTasksByProjectIdService.ExecuteAsync(projectId);
 
             if (projectTasks == null || !projectTasks.Any())
                 return NoContent();
-                
+
             return Ok(projectTasks);
+        }
+        
+        /// <summary>
+        /// Remove um projeto específico.
+        /// </summary>
+        /// <param name="projectId">Id externo (GUID) do projeto a ser removido.</param>
+        /// <returns>No Content se a remoção for bem-sucedida, ou Not Found se o projeto não existir, ou Conflict se tiver tarefas pendentes.</returns>
+        [HttpDelete("{projectId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)] 
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> DeleteProject([FromRoute] Guid projectId)
+        {
+            var success = await _deleteProjectService.ExecuteAsync(projectId);
+
+            if (!success)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }
