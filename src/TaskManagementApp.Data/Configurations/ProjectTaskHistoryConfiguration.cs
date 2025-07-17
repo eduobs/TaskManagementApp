@@ -35,7 +35,8 @@ namespace TaskManagementApp.Data.Configurations
                    .IsRequired();
 
             builder.Property(pth => pth.ChangeType)
-                   .HasMaxLength(50);
+                   .HasConversion<int>()
+                   .IsRequired();
 
             builder.HasOne(pth => pth.ProjectTask)
                    .WithMany()

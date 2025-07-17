@@ -1,5 +1,6 @@
 using FluentAssertions;
 using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Enums;
 
 namespace TaskManagementApp.Tests.Domain.Entities
 {
@@ -16,7 +17,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
             var oldValue = "Pending";
             var newValue = "Completed";
             var modifiedByUserId = Guid.NewGuid();
-            var changeType = "Status Change";
+            var changeType = HistoryChangeType.UpdateDetails;
 
             // Act
             var historyEntry = ProjectTaskHistory.Create(projectTaskId, propertyName, oldValue, newValue, modifiedByUserId, changeType);
@@ -50,7 +51,7 @@ namespace TaskManagementApp.Tests.Domain.Entities
 
             // Assert
             historyEntry.Should().NotBeNull();
-            historyEntry.ChangeType.Should().Be("Update");
+            historyEntry.ChangeType.Should().Be(HistoryChangeType.UpdateDetails);
         }
 
         [Theory(DisplayName = @"DADO um id de tarefa interna inválido

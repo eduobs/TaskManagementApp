@@ -1,10 +1,12 @@
+using TaskManagementApp.Domain.Enums;
+
 namespace TaskManagementApp.Domain.Entities
 {
     public class ProjectTaskHistory
     {
         private ProjectTaskHistory() { }
 
-        public ProjectTaskHistory(int projectTaskId, string propertyName, string oldValue, string newValue, Guid modifiedByUserId, string? changeType = null)
+        public ProjectTaskHistory(int projectTaskId, string propertyName, string oldValue, string newValue, Guid modifiedByUserId, HistoryChangeType changeType)
         {
             if (projectTaskId <= 0)
                 throw new ArgumentException("O id interno da tarefa é inválido.", nameof(projectTaskId));
@@ -21,8 +23,7 @@ namespace TaskManagementApp.Domain.Entities
             NewValue = newValue;
             ModificationDate = DateTime.UtcNow;
             ModifiedByUserId = modifiedByUserId;
-
-            ChangeType = string.IsNullOrWhiteSpace(changeType) ? "Update" : changeType;
+            ChangeType = changeType;
         }
         
         public int Id { get; private set; }
@@ -41,10 +42,19 @@ namespace TaskManagementApp.Domain.Entities
 
         public Guid ModifiedByUserId { get; private set; }
 
-        public string? ChangeType { get; private set; }
+        public HistoryChangeType ChangeType { get; private set; }
 
-        public static ProjectTaskHistory Create(int projectTaskId, string propertyName, string oldValue, string newValue, Guid modifiedByUserId, string? changeType = null)
+        public static ProjectTaskHistory Create(
+            int projectTaskId,
+            string propertyName,
+            string oldValue,
+            string newValue,
+            Guid modifiedByUserId,
+            HistoryChangeType changeType = HistoryChangeType.UpdateDetails)
         {
+            if (changeType == HistoryChangeType.CommentAdded && propertyName != "Comment")
+                propertyName = "Comment";
+
             return new ProjectTaskHistory(projectTaskId, propertyName, oldValue, newValue, modifiedByUserId, changeType);
         }
     }

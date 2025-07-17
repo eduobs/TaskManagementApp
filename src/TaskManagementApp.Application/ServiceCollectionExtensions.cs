@@ -19,6 +19,7 @@ namespace TaskManagementApp.Application
             services.AddScoped<IDeleteProjectTaskService, DeleteProjectTaskService>();
             services.AddScoped<IDeleteProjectService, DeleteProjectService>();
             services.AddScoped<IGetPerformanceReportService, GetPerformanceReportService>();
+            services.AddScoped<IAddCommentToTaskService, AddCommentToTaskService>();
             
             return services;
         }
