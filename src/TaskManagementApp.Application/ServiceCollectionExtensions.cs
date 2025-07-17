@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using TaskManagementApp.Application.Projects;
 using TaskManagementApp.Application.ProjectTasks;
+using TaskManagementApp.Application.Reports;
 
 namespace TaskManagementApp.Application
 {
@@ -17,6 +18,7 @@ namespace TaskManagementApp.Application
             services.AddScoped<IUpdateProjectTaskStatusService, UpdateProjectTaskStatusService>();
             services.AddScoped<IDeleteProjectTaskService, DeleteProjectTaskService>();
             services.AddScoped<IDeleteProjectService, DeleteProjectService>();
+            services.AddScoped<IGetPerformanceReportService, GetPerformanceReportService>();
             
             return services;
         }
