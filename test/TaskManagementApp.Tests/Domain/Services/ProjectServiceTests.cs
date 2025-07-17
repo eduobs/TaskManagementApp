@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementApp.Domain.Entities;
+using TaskManagementApp.Domain.Enums;
 using TaskManagementApp.Domain.Interfaces;
 using TaskManagementApp.Domain.Services;
 
@@ -8,13 +10,22 @@ namespace TaskManagementApp.Tests.Domain.Services
 {
     public class ProjectServiceTests
     {
+        private readonly Mock<ILogger<ProjectService>> _mockLogger;
         private readonly Mock<IProjectRepository> _mockProjectRepository;
+        private readonly Mock<IProjectTaskRepository> _mockProjectTaskRepository;
         private readonly ProjectService _projectService;
 
         public ProjectServiceTests()
         {
+            _mockLogger = new Mock<ILogger<ProjectService>>();
             _mockProjectRepository = new Mock<IProjectRepository>();
-            _projectService = new ProjectService(_mockProjectRepository.Object);
+            _mockProjectTaskRepository = new Mock<IProjectTaskRepository>();
+
+            _projectService = new ProjectService(
+                _mockLogger.Object,
+                _mockProjectRepository.Object,
+                _mockProjectTaskRepository.Object
+            );
         }
 
         [Fact(DisplayName = @"DADO um projeto válido
@@ -206,6 +217,48 @@ namespace TaskManagementApp.Tests.Domain.Services
 
             // Assert
             result.Should().BeFalse();
+            _mockProjectRepository.Verify(r => r.Delete(It.IsAny<Project>()), Times.Never());
+            _mockProjectRepository.Verify(r => r.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact(DisplayName = @"DADO um projeto com tarefas pendentes
+                            QUANDO tentar deletar o projeto
+                            ENTÃO deve lançar InvalidOperationException")]
+        public async Task DeleteProjectAsync_ComTarefasPendentes_DeveLancarException()
+        {
+            // Arrange
+            var projectExternalId = Guid.NewGuid();
+            var projectIdInterno = 1;
+            var projectName = "Projeto";
+            var project = new Project(projectName, "Descrição");
+            project.GetType().GetProperty("Id")?.SetValue(project, projectIdInterno);
+            project.GetType().GetProperty("ExternalId")?.SetValue(project, projectExternalId);
+
+            _mockProjectRepository
+                .Setup(r => r.GetByIdAsync(projectExternalId))
+                .ReturnsAsync(project);
+
+            var pendingTasks = new List<ProjectTask>
+            {
+                new ("Tarefa Pendente 1", "Descrição", DateTime.Today.AddDays(1), ProjectTaskPriority.Low, projectIdInterno),
+                new ("Tarefa Pendente 2", "Descriçao", DateTime.Today.AddDays(1), ProjectTaskPriority.Medium, projectIdInterno)
+            };
+            
+            pendingTasks[0].UpdateStatus(ProjectTaskStatus.Pending);
+            pendingTasks[1].UpdateStatus(ProjectTaskStatus.InProgress);
+            pendingTasks[1].UpdateStatus(ProjectTaskStatus.Pending);
+
+            _mockProjectTaskRepository
+                .Setup(r => r.GetAllByProjectIdAsync(projectExternalId))
+                .ReturnsAsync(pendingTasks);
+
+            // Act
+            Func<Task> act = async () => await _projectService.DeleteProjectAsync(projectExternalId);
+
+            // Assert
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                       .WithMessage($"Não é possível remover o projeto '{projectName}'. Ainda há tarefas pendentes associadas a ele. Conclua ou remova as tarefas primeiro.");
+
             _mockProjectRepository.Verify(r => r.Delete(It.IsAny<Project>()), Times.Never());
             _mockProjectRepository.Verify(r => r.SaveChangesAsync(), Times.Never());
         }
