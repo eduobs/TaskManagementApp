@@ -147,3 +147,90 @@ Este projeto é uma API RESTful para um sistema de gerenciamento de tarefas. O o
         * Usuario Padrao: Id - 00000000-0000-0000-0000-000000000001
         * Gerente Geral: Id - 00000000-0000-0000-0000-000000000002
     * Esses dados devem ser passados via header `X-User-Id`.
+
+---
+
+## Refinamento próximas atividades
+
+Listo abaixo as perguntas que seriam direcionadas ao PO visando o refinamento das funcionalidades existentes e o planejamento de novas implementações ou melhorias.
+
+### 1. Autenticação e Autorização (Prioridade Alta)
+
+* **1.1. Estratégia de Autenticação e Autorização:**
+    * Como os usuários serão autenticados no sistema? (OAuth 2.0 / OpenID Connect, JWT, Azure AD B2C, Identity Server, provedor de identidade externo como Google/Microsoft?).
+    * Como será feita a gestão de usuários (criação, edição, desativação) se a API atual não é responsável pelo CRUD de usuários? Haverá um sistema externo para isso?
+    * Com base nisso, como o `UserId` será informado nas requisições para consumo interno da API (via Token JWT em um cabeçalho `Authorization` em vez do `X-User-Id` atual)?
+
+* **1.2. Papéis e Permissões:**
+    * Além de "Básico" e "Gerente", haverá outros papéis de usuário no futuro? Quais funcionalidades cada papel poderá acessar/modificar?
+    * As permissões serão granulares ("pode editar sua própria tarefa", "pode ver tarefas de todos os projetos", "pode apagar qualquer tarefa") ou baseadas apenas em papéis?
+
+### 2. Colaboração e Relacionamentos entre Entidades
+
+* **2.1. Atribuição de Tarefas:**
+    * Uma tarefa pode ser atribuída a múltiplos usuários? Atualmente é apenas um.
+    * A atribuição de uma tarefa pode mudar ao longo do tempo? Se sim, a mudança de usuário também deve ser registrada no histórico da tarefa?
+* **2.2. Projetos e Usuários:**
+    * Um projeto pode ter múltiplos usuários associados que podem visualizar e/ou gerenciar suas tarefas?
+    * Haverá times ou equipes que podem ser associados a projetos ou tarefas?
+* **2.3. Hierarquia de Tarefas:**
+    * Existe a necessidade de subtarefas ou de dependências entre tarefas (uma tarefa só pode começar/terminar depois de outra)?
+
+### 3. Regras de Negócio Existentes
+
+* **3.1. Prioridades de Tarefas:**
+    * A prioridade é um campo estático (baixa, média, alta) ou poderá ser customizável no futuro?
+    * Existe algum limite ou regra de negócio para a prioridade (x tarefas de alta prioridade por projeto)?
+* **3.2. Restrições de Remoção de Projetos:**
+    * A regra "não remover se houver tarefas pendentes" é rígida ou haveria cenários de exceção (força um delete que move as tarefas para outro projeto, ou as marca como canceladas)?
+    * Será necessário um processo de "arquivar" projetos em vez de deletar permanentemente?
+* **3.3. Limite de Tarefas por Projeto (20):**
+    * Esse limite é fixo ou configurável por projeto/tipo de projeto?
+    * Como lidar com concorrência para o limite de 20 tarefas? (Bloqueio otimista/pessimista para evitar que dois usuários adicionem a 20ª tarefa ao mesmo tempo). Isso foi uma melhoria identificada e pode ser validado aqui.
+* **3.4. Histórico de Atualizações:**
+    * Será necessário expor o histórico de alterações das tarefas via API, um endpoint de histórico? Se sim, quais dados precisamos expor e de que forma?
+    * O que acontece com o histórico se a tarefa for deletada?
+* **3.5. Comentários nas Tarefas:**
+    * Os comentários devem ser visíveis para todos os usuários de um projeto ou apenas para o autor e gerentes?
+
+### 4. Relatórios de Desempenho (Expansão)
+
+* **4.1. Tipos de Relatórios:**
+    * Além do número médio de tarefas concluídas por usuário, quais outros relatórios são importantes (tarefas em atraso, produtividade por projeto, distribuição de prioridades, gargalos)?
+    * Os relatórios terão filtros adicionais (por período customizado, por usuário específico, por tipo de tarefa)?
+
+### 5. Outras Funcionalidades Potenciais
+
+* **5.1. Notificações:**
+    * Haverá um sistema de notificações (ex: tarefa atribuída, prazo próximo, status alterado)? Como elas seriam entregues (email, push, in-app)?
+* **5.2. Anexos:**
+    * As tarefas precisarão de anexos (documentos, imagens)? Onde seriam armazenados?
+
+---
+
+## Melhorias e Visão Futura
+
+### 1. Arquitetura e Padrões de Projeto
+
+* **1.1. Padrão CQRS (Command Query Responsibility Segregation):**
+    * Para melhorar a performance, especialmente com cargas de leitura e escrita desiguais, o padrão CQRS poderia ser usado no projeto. Teríamos comandos para operações que alteram o estado e queries para operações de leitura.
+* **1.2. Design Orientado a Domínio (Domain-Driven Design - DDD):**
+    * Aprofundar o uso de conceitos de DDD, como `Aggregate Roots` (ex: `Project` como Aggregate Root para suas `ProjectTasks`), `Value Objects` (para representar conceitos como `Deadline` de forma mais rica ou `TaskPriority` como um Value Object complexo, se necessário) e `Domain Events` (para publicar eventos como "TarefaConcluida" que outros serviços podem consumir, como o serviço de notificação ou histórico de forma mais reativa).
+
+### 2. Infraestrutura e Cloud
+
+* **2.1. Orquestração de Containers (Kubernetes / AKS / EKS):**
+    * Para ambientes de produção, migrar do `docker-compose` para uma plataforma de orquestração de containers como Kubernetes (Azure Kubernetes Service - AKS). Isso forneceria escalabilidade automática, auto-recuperação, balanceamento de carga e gerenciamento de segredos mais robusto.
+* **2.2. CI/CD Pipelines (Azure DevOps / GitHub Actions):**
+    * Implementar pipelines de Continuous Integration (CI) e Continuous Deployment (CD) para automatizar o build, teste, empacotamento Docker e deploy da aplicação. Dado minha experiência com Azure DevOps, seria a minha escolha natural.
+* **2.3. Gerenciamento de Segredos (Azure Key Vault):**
+    * Eu moveria as credenciais do banco de dados (e outras informações sensíveis) de arquivos `.env` para um serviço de gerenciamento de segredos na nuvem, evitando expor diretamente no código fonte esses dados.
+* **2.4. Monitoramento e Observabilidade:**
+    * Implementar soluções robustas de monitoramento (como Application Insights, Grafana) para coletar métricas de performance, logs e tracing distribuído (OpenTelemetry) para identificar gargalos e diagnosticar problemas em produção.
+
+### 3. Qualidade do Código e Manutenibilidade
+
+* **3.1. Validação Robusta:**
+    * Embora `DataAnnotations` seja funcional, a adoção de uma biblioteca como FluentValidation permitiria uma validação mais expressiva, customizável e testável, separando as regras de validação dos DTOs.
+* **3.2. Testes Integração:**
+    * Expandir a cobertura de testes para incluir testes de integração.
